@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Metric Beam Calculator</title>
+    <title>Metric Beam Calculator (kg & kg/m)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <style>
         :root {
             --primary: #0056b3;
@@ -14,7 +16,7 @@
             --accent: #28a745;
             --danger: #dc3545;
         }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; color: var(--text); background: #f4f4f9; }
+        body { font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; color: var(--text); background: #f4f4f9; }
         
         /* Layout */
         .container { max-width: 1200px; margin: 0 auto; padding: 10px; }
@@ -23,28 +25,33 @@
         
         /* Tabs */
         .tabs { display: flex; overflow-x: auto; background: white; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
-        .tab-btn { flex: 1; padding: 15px; border: none; background: none; font-weight: 600; cursor: pointer; white-space: nowrap; border-bottom: 3px solid transparent; }
-        .tab-btn.active { border-bottom-color: var(--primary); color: var(--primary); }
+        .tab-btn { flex: 1; padding: 15px; border: none; background: none; font-weight: 600; cursor: pointer; white-space: nowrap; border-bottom: 3px solid transparent; transition: 0.3s; }
+        .tab-btn:hover { background: #f0f0f0; }
+        .tab-btn.active { border-bottom-color: var(--primary); color: var(--primary); background: #eef6fc; }
         
         /* Sections */
-        .tab-content { display: none; padding: 20px 10px; background: white; min-height: 80vh; }
+        .tab-content { display: none; padding: 20px 10px; background: white; min-height: 80vh; animation: fadeIn 0.3s; }
         .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         /* Forms */
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 0.9rem; }
         input, select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 4px; box-sizing: border-box; font-size: 1rem; }
+        input:focus, select:focus { border-color: var(--primary); outline: none; }
         .row { display: flex; gap: 10px; }
         .col { flex: 1; }
         
         /* Interactive Elements */
-        button.action-btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 4px; font-size: 1rem; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button.action-btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 4px; font-size: 1rem; font-weight: bold; cursor: pointer; margin-top: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        button.action-btn:hover { background: #004494; }
         button.add-btn { background: var(--secondary); color: var(--text); border: 1px solid var(--border); margin-top: 5px; }
-        button.remove-btn { background: var(--danger); color: white; width: auto; padding: 5px 10px; font-size: 0.8rem; }
+        button.add-btn:hover { background: #e2e6ea; }
+        button.remove-btn { background: var(--danger); color: white; width: auto; padding: 5px 10px; font-size: 0.8rem; border:none; border-radius:3px; cursor:pointer;}
         
         /* Cards */
         .card { border: 1px solid var(--border); padding: 15px; border-radius: 6px; margin-bottom: 15px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .card h3 { margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .card h3 { margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid #eee; padding-bottom: 5px; color: var(--primary); }
 
         /* Visualization */
         #beamCanvas { width: 100%; height: 200px; background: white; border: 1px solid var(--border); border-radius: 4px; margin-bottom: 20px; touch-action: none; }
@@ -52,41 +59,46 @@
 
         /* Results & Report */
         .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
-        .result-item { background: var(--secondary); padding: 10px; border-radius: 4px; text-align: center; }
+        .result-item { background: var(--secondary); padding: 10px; border-radius: 4px; text-align: center; border: 1px solid #eee; }
         .result-val { display: block; font-size: 1.2rem; font-weight: bold; color: var(--primary); }
         .result-label { font-size: 0.8rem; color: #666; }
         
-        .report-step { font-family: "Courier New", monospace; background: #f8f9fa; padding: 10px; border-left: 3px solid var(--primary); margin-bottom: 10px; font-size: 0.9rem; overflow-x: auto; }
-        .latex-like { font-style: italic; font-family: 'Times New Roman', Times, serif; }
+        /* The Report Styling */
+        .report-box { font-family: 'Times New Roman', Times, serif; font-size: 1.1rem; line-height: 1.6; color: #000; }
+        .step-block { margin-bottom: 20px; padding: 15px; background: #fdfdfd; border-left: 4px solid var(--primary); border: 1px solid #eee; border-left-width: 4px; }
+        .step-title { font-weight: bold; font-family: sans-serif; color: #444; margin-bottom: 10px; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; }
+        .equation { background: #fff; padding: 10px; margin: 5px 0; border-radius: 4px; text-align: center; overflow-x: auto; }
 
         /* Utilities */
         .hidden { display: none; }
-        .status-pass { color: var(--accent); font-weight: bold; }
-        .status-fail { color: var(--danger); font-weight: bold; }
+        .status-pass { color: var(--accent); font-weight: bold; padding: 5px 10px; border-radius: 4px; background: #d4edda; }
+        .status-fail { color: var(--danger); font-weight: bold; padding: 5px 10px; border-radius: 4px; background: #f8d7da; }
     </style>
 </head>
 <body>
 
 <header>
     <h1>Metric Beam Calculator</h1>
+    <div style="font-size: 0.8rem; opacity: 0.9;">Input: kg, kg/m | Calc: Newtons, MPa</div>
 </header>
 
 <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('geometry')">1. Geometry & Mat</button>
-    <button class="tab-btn" onclick="switchTab('loads')">2. Loads</button>
+    <button class="tab-btn active" onclick="switchTab('geometry')">1. Geometry</button>
+    <button class="tab-btn" onclick="switchTab('loads')">2. Loads (kg)</button>
     <button class="tab-btn" onclick="switchTab('results')">3. Results</button>
-    <button class="tab-btn" onclick="switchTab('report')">4. Report</button>
+    <button class="tab-btn" onclick="switchTab('report')">4. Detail Report</button>
 </div>
 
 <div class="container">
 
     <div id="geometry" class="tab-content active">
         <div class="card">
-            <h3>Material</h3>
+            <h3>Material Properties</h3>
             <div class="form-group">
                 <label>Select Material</label>
                 <select id="materialSelect" onchange="updateMaterialDefaults()">
                     <option value="S235">Steel S235 (ST37)</option>
+                    <option value="S355">Steel S355 (ST52)</option>
                     <option value="AL5052">Aluminum 5052</option>
                     <option value="Custom">Custom</option>
                 </select>
@@ -98,7 +110,7 @@
         </div>
 
         <div class="card">
-            <h3>Beam Configuration</h3>
+            <h3>Beam Config</h3>
             <div class="form-group">
                 <label>Total Length L (mm)</label>
                 <input type="number" id="beamLength" value="5000">
@@ -160,12 +172,13 @@
 
     <div id="loads" class="tab-content">
         <canvas id="beamCanvas"></canvas>
-        
+        <p style="text-align:center; font-size:0.8rem; color:#666;">Diagram visualizes loads in kg. Calculation converts to N using g=9.81.</p>
+
         <div class="card">
-            <h3>Defined Loads</h3>
+            <h3>Loads</h3>
             <div id="loadList"></div>
-            <button class="action-btn add-btn" onclick="addLoadInput()">+ Add Point Load</button>
-            <button class="action-btn add-btn" onclick="addUDLInput()">+ Add Distributed Load (UDL)</button>
+            <button class="action-btn add-btn" onclick="addLoadInput()">+ Add Point Mass (kg)</button>
+            <button class="action-btn add-btn" onclick="addUDLInput()">+ Add Distributed Mass (kg/m)</button>
         </div>
 
         <button class="action-btn" onclick="calculateBeam()">CALCULATE</button>
@@ -177,7 +190,7 @@
             <div class="result-grid">
                 <div class="result-item">
                     <span class="result-val" id="resUtil">0%</span>
-                    <span class="result-label">Bending Utilization</span>
+                    <span class="result-label">Utilization</span>
                 </div>
                 <div class="result-item">
                     <span class="result-val" id="resStress">0</span>
@@ -188,11 +201,11 @@
                     <span class="result-label">Max Deflection (mm)</span>
                 </div>
                 <div class="result-item">
-                    <span class="result-val" id="resRatio">L/0</span>
-                    <span class="result-label">Deflection Ratio</span>
+                    <span class="result-val" id="resMom">0</span>
+                    <span class="result-label">Max Moment (kNm)</span>
                 </div>
             </div>
-            <div style="margin-top:10px; text-align:center;">
+            <div style="margin-top:15px; text-align:center;">
                  <span id="passFailBadge"></span>
             </div>
         </div>
@@ -206,22 +219,14 @@
             <h4>Deflection (y) [mm]</h4>
             <div class="chart-container"><canvas id="deflChart"></canvas></div>
         </div>
-
-        <div class="card">
-            <h3>Section Properties</h3>
-            <div id="sectionProps" class="report-step"></div>
-        </div>
-        
-        <div class="card">
-             <h3>Reactions</h3>
-             <div id="reactionResults" class="report-step"></div>
-        </div>
     </div>
 
     <div id="report" class="tab-content">
-        <h2>Calculation Report</h2>
-        <div id="fullReport"></div>
-        <button class="action-btn" onclick="window.print()">Print / Save PDF</button>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h2>Detailed Step-by-Step Report</h2>
+            <button class="action-btn" style="width:auto; margin:0;" onclick="window.print()">Print</button>
+        </div>
+        <div id="fullReport" class="report-box"></div>
     </div>
 
 </div>
@@ -230,43 +235,40 @@
 /**
  * DATA & CONFIG
  */
+const G = 9.81; // Gravity constant
+
 const IPE_DB = {
-    80:  { h:80,  b:46,  tw:3.8, tf:5.2, A:764,  Iy:80.14e4, Wpl:0,    Wy:20.03e3 }, // Simplified
-    100: { h:100, b:55,  tw:4.1, tf:5.7, A:1030, Iy:171e4,   Wpl:39.4e3, Wy:34.2e3 },
-    120: { h:120, b:64,  tw:4.4, tf:6.3, A:1320, Iy:318e4,   Wpl:60.7e3, Wy:53e3 },
-    140: { h:140, b:73,  tw:4.7, tf:6.9, A:1640, Iy:541e4,   Wpl:88.3e3, Wy:77.3e3 },
-    160: { h:160, b:82,  tw:5.0, tf:7.4, A:2010, Iy:869e4,   Wpl:124e3,  Wy:109e3 },
-    180: { h:180, b:91,  tw:5.3, tf:8.0, A:2390, Iy:1317e4,  Wpl:166e3,  Wy:146e3 },
-    200: { h:200, b:100, tw:5.6, tf:8.5, A:2850, Iy:1943e4,  Wpl:221e3,  Wy:194e3 },
-    220: { h:220, b:110, tw:5.9, tf:9.2, A:3340, Iy:2772e4,  Wpl:285e3,  Wy:252e3 },
-    240: { h:240, b:120, tw:6.2, tf:9.8, A:3910, Iy:3892e4,  Wpl:367e3,  Wy:324e3 },
-    270: { h:270, b:135, tw:6.6, tf:10.2,A:4590, Iy:5790e4,  Wpl:484e3,  Wy:429e3 },
-    300: { h:300, b:150, tw:7.1, tf:10.7,A:5380, Iy:8356e4,  Wpl:628e3,  Wy:557e3 },
-    330: { h:330, b:160, tw:7.5, tf:11.5,A:6260, Iy:11770e4, Wpl:804e3,  Wy:713e3 },
-    360: { h:360, b:170, tw:8.0, tf:12.7,A:7270, Iy:16270e4, Wpl:1019e3, Wy:904e3 },
-    400: { h:400, b:180, tw:8.6, tf:13.5,A:8450, Iy:23130e4, Wpl:1307e3, Wy:1156e3 },
-    450: { h:450, b:190, tw:9.4, tf:14.6,A:9880, Iy:33740e4, Wpl:1702e3, Wy:1500e3 },
-    500: { h:500, b:200, tw:10.2,tf:16.0,A:11600,Iy:48200e4, Wpl:2194e3, Wy:1930e3 },
+    80:  { h:80,  b:46,  A:764,  Iy:80.14e4, Wy:20.03e3 },
+    100: { h:100, b:55,  A:1030, Iy:171e4,   Wy:34.2e3 },
+    120: { h:120, b:64,  A:1320, Iy:318e4,   Wy:53e3 },
+    140: { h:140, b:73,  A:1640, Iy:541e4,   Wy:77.3e3 },
+    160: { h:160, b:82,  A:2010, Iy:869e4,   Wy:109e3 },
+    180: { h:180, b:91,  A:2390, Iy:1317e4,  Wy:146e3 },
+    200: { h:200, b:100, A:2850, Iy:1943e4,  Wy:194e3 },
+    220: { h:220, b:110, A:3340, Iy:2772e4,  Wy:252e3 },
+    240: { h:240, b:120, A:3910, Iy:3892e4,  Wy:324e3 },
+    270: { h:270, b:135, A:4590, Iy:5790e4,  Wy:429e3 },
+    300: { h:300, b:150, A:5380, Iy:8356e4,  Wy:557e3 },
+    360: { h:360, b:170, A:7270, Iy:16270e4, Wy:904e3 },
+    400: { h:400, b:180, A:8450, Iy:23130e4, Wy:1156e3 },
+    450: { h:450, b:190, A:9880, Iy:33740e4, Wy:1500e3 },
+    500: { h:500, b:200, A:11600,Iy:48200e4, Wy:1930e3 },
 };
 
-let loads = [];
 let charts = {};
 
-/**
- * INITIALIZATION
- */
 window.onload = function() {
-    // Populate IPE Dropdown
     const ipeSel = document.getElementById('ipeSize');
     Object.keys(IPE_DB).forEach(key => {
         const opt = document.createElement('option');
         opt.value = key;
         opt.innerText = `IPE ${key}`;
+        if(key === "200") opt.selected = true;
         ipeSel.appendChild(opt);
     });
     
-    // Add default load
-    addLoadInput(2500, 5000); // Midspan 5kN
+    // Default load: 500kg at midspan
+    addLoadInput(2500, 500); 
     updateSectionInputs();
     drawBeamSchematic();
 };
@@ -275,17 +277,12 @@ function switchTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
-    // Find button
+    
     const btns = document.querySelectorAll('.tab-btn');
-    if(tabId === 'geometry') btns[0].classList.add('active');
-    if(tabId === 'loads') {
-        btns[1].classList.add('active');
-        drawBeamSchematic();
-    }
-    if(tabId === 'results') {
-        btns[2].classList.add('active');
-    }
-    if(tabId === 'report') btns[3].classList.add('active');
+    const order = { 'geometry':0, 'loads':1, 'results':2, 'report':3 };
+    btns[order[tabId]].classList.add('active');
+
+    if(tabId === 'loads') drawBeamSchematic();
 }
 
 /**
@@ -293,10 +290,13 @@ function switchTab(tabId) {
  */
 function updateMaterialDefaults() {
     const type = document.getElementById('materialSelect').value;
-    if (type === 'S235') {
+    if (type.includes('S235')) {
         document.getElementById('matE').value = 210000;
         document.getElementById('matFy').value = 235;
-    } else if (type === 'AL5052') {
+    } else if (type.includes('S355')) {
+        document.getElementById('matE').value = 210000;
+        document.getElementById('matFy').value = 355;
+    } else if (type.includes('AL')) {
         document.getElementById('matE').value = 70000;
         document.getElementById('matFy').value = 193;
     }
@@ -308,19 +308,19 @@ function updateSectionInputs() {
     document.getElementById(`sec-${type}`).classList.remove('hidden');
 }
 
-function addLoadInput(pos = 0, mag = 0) {
+function addLoadInput(pos = 0, mass = 0) {
     const container = document.getElementById('loadList');
     const div = document.createElement('div');
     div.className = "card";
     div.style.padding = "10px";
     div.innerHTML = `
-        <div class="row" style="align-items:center;">
-            <div class="col"><strong>Point Load</strong></div>
-            <button class="remove-btn" onclick="this.parentElement.parentElement.remove(); drawBeamSchematic();">X</button>
+        <div class="row" style="align-items:center; margin-bottom:5px;">
+            <div class="col" style="font-weight:bold; color:var(--primary);">Point Load (Mass)</div>
+            <button class="remove-btn" onclick="this.closest('.card').remove(); drawBeamSchematic();">Remove</button>
         </div>
         <div class="row">
-            <div class="col"><label>Pos x (mm)</label><input type="number" class="l-pos" value="${pos}" onchange="drawBeamSchematic()"></div>
-            <div class="col"><label>Force P (N)</label><input type="number" class="l-mag" value="${mag}" onchange="drawBeamSchematic()"></div>
+            <div class="col"><label>Position x (mm)</label><input type="number" class="l-pos" value="${pos}" onchange="drawBeamSchematic()"></div>
+            <div class="col"><label>Mass (kg)</label><input type="number" class="l-mass" value="${mass}" onchange="drawBeamSchematic()"></div>
         </div>
         <input type="hidden" class="l-type" value="point">
     `;
@@ -334,17 +334,17 @@ function addUDLInput() {
     div.className = "card";
     div.style.padding = "10px";
     div.innerHTML = `
-        <div class="row" style="align-items:center;">
-            <div class="col"><strong>Dist. Load (UDL)</strong></div>
-            <button class="remove-btn" onclick="this.parentElement.parentElement.remove(); drawBeamSchematic();">X</button>
+        <div class="row" style="align-items:center; margin-bottom:5px;">
+            <div class="col" style="font-weight:bold; color:var(--primary);">Distributed Load</div>
+            <button class="remove-btn" onclick="this.closest('.card').remove(); drawBeamSchematic();">Remove</button>
         </div>
         <div class="row">
             <div class="col"><label>Start x1 (mm)</label><input type="number" class="l-x1" value="0" onchange="drawBeamSchematic()"></div>
             <div class="col"><label>End x2 (mm)</label><input type="number" class="l-x2" value="1000" onchange="drawBeamSchematic()"></div>
         </div>
         <div class="form-group">
-            <label>Intensity w (N/mm or kN/m)</label>
-            <input type="number" class="l-w" value="10" onchange="drawBeamSchematic()">
+            <label>Mass per Meter (kg/m)</label>
+            <input type="number" class="l-mass-len" value="100" onchange="drawBeamSchematic()">
         </div>
         <input type="hidden" class="l-type" value="udl">
     `;
@@ -352,30 +352,249 @@ function addUDLInput() {
     drawBeamSchematic();
 }
 
-function getLoadsFromUI() {
-    const list = [];
-    document.querySelectorAll('#loadList > div').forEach(div => {
+/**
+ * CALCULATE
+ */
+function calculateBeam() {
+    // 1. Gather Inputs
+    const L = parseFloat(document.getElementById('beamLength').value);
+    const matE = parseFloat(document.getElementById('matE').value);
+    const matFy = parseFloat(document.getElementById('matFy').value);
+    const supportType = document.getElementById('supportType').value;
+    
+    // 2. Process Loads (KG -> N conversion)
+    let loads = [];
+    let loadReportSteps = [];
+    
+    document.querySelectorAll('#loadList > .card').forEach((div, idx) => {
         const type = div.querySelector('.l-type').value;
         if(type === 'point') {
-            list.push({
-                type: 'point',
-                x: parseFloat(div.querySelector('.l-pos').value),
-                P: parseFloat(div.querySelector('.l-mag').value)
-            });
+            const m = parseFloat(div.querySelector('.l-mass').value);
+            const x = parseFloat(div.querySelector('.l-pos').value);
+            const P = m * G; // N
+            loads.push({ type:'point', x:x, P:P, m:m, id: idx+1 });
+            loadReportSteps.push(`Load ${idx+1} (Point): ${m} kg $\\times$ ${G} = <strong>${P.toFixed(1)} N</strong> at ${x} mm`);
         } else {
-            list.push({
-                type: 'udl',
-                x1: parseFloat(div.querySelector('.l-x1').value),
-                x2: parseFloat(div.querySelector('.l-x2').value),
-                w: parseFloat(div.querySelector('.l-w').value)
-            });
+            const m_len = parseFloat(div.querySelector('.l-mass-len').value); // kg/m
+            const x1 = parseFloat(div.querySelector('.l-x1').value);
+            const x2 = parseFloat(div.querySelector('.l-x2').value);
+            // Convert kg/m to N/mm
+            // (kg/m) * g = N/m.  (N/m) / 1000 = N/mm.
+            const w_N_m = m_len * G; 
+            const w_N_mm = w_N_m / 1000;
+            loads.push({ type:'udl', x1:x1, x2:x2, w:w_N_mm, m_len: m_len, id: idx+1 });
+            loadReportSteps.push(`Load ${idx+1} (UDL): ${m_len} kg/m $\\times$ ${G} = ${w_N_m.toFixed(1)} N/m = <strong>${w_N_mm.toFixed(3)} N/mm</strong> from ${x1} to ${x2} mm`);
         }
     });
-    return list;
+
+    // 3. Section Props
+    let Ix, Wy, name, area;
+    const secType = document.getElementById('sectionType').value;
+    if(secType === 'IPE') {
+        const s = document.getElementById('ipeSize').value;
+        Ix = IPE_DB[s].Iy; Wy = IPE_DB[s].Wy; area = IPE_DB[s].A;
+        name = `IPE ${s}`;
+    } else if (secType === 'SOLID') {
+        const b = parseFloat(document.getElementById('solidB').value);
+        const h = parseFloat(document.getElementById('solidH').value);
+        Ix = (b*h*h*h)/12; Wy = (b*h*h)/6; area = b*h;
+        name = `Solid ${b}x${h} mm`;
+    } else if (secType === 'RHS') {
+        const b = parseFloat(document.getElementById('rhsB').value);
+        const h = parseFloat(document.getElementById('rhsH').value);
+        const t = parseFloat(document.getElementById('rhsT').value);
+        Ix = (b*Math.pow(h,3) - (b-2*t)*Math.pow(h-2*t,3))/12;
+        Wy = Ix / (h/2);
+        area = b*h - (b-2*t)*(h-2*t);
+        name = `RHS ${h}x${b}x${t} mm`;
+    } else if (secType === 'ANGLE') {
+        const a = parseFloat(document.getElementById('angleA').value);
+        const b = parseFloat(document.getElementById('angleB').value);
+        const t = parseFloat(document.getElementById('angleT').value);
+        // Simplified conservative approx for Angle
+        const cy = (a*t*a/2 + (b-t)*t*t/2) / (a*t + (b-t)*t);
+        Ix = (t*Math.pow(a,3))/12 + a*t*Math.pow(a/2-cy,2) + ((b-t)*Math.pow(t,3))/12 + (b-t)*t*Math.pow(t/2-cy,2);
+        Wy = Ix / Math.max(cy, a-cy);
+        name = `Angle ${a}x${b}x${t} mm`;
+    }
+
+    // 4. Reactions & Diagrams
+    let Ra = 0, Rb = 0, Ma = 0;
+    let sumP = 0, sumM_aboutA = 0;
+    let reactionSteps = [];
+
+    // Reaction Calc loop
+    reactionSteps.push("Summing moments about Support A (x=0):");
+    loads.forEach(l => {
+        if(l.type === 'point') {
+            sumP += l.P;
+            const mom = l.P * l.x;
+            sumM_aboutA += mom;
+            reactionSteps.push(`$\\quad + ( ${l.P.toFixed(1)} \\text{ N} \\times ${l.x} \\text{ mm} ) = ${mom.toFixed(0)} \\text{ Nmm}$`);
+        } else {
+            const len = l.x2 - l.x1;
+            const F = l.w * len;
+            const cent = l.x1 + len/2;
+            sumP += F;
+            const mom = F * cent;
+            sumM_aboutA += mom;
+            reactionSteps.push(`$\\quad + ( \\text{UDL Force } ${F.toFixed(1)} \\text{ N} \\times \\text{center } ${cent} \\text{ mm} ) = ${mom.toFixed(0)} \\text{ Nmm}$`);
+        }
+    });
+
+    if(supportType === 'pinned') {
+        // Ma = 0, Rb * L = SumM
+        Rb = sumM_aboutA / L;
+        Ra = sumP - Rb;
+        reactionSteps.push(`Total Moment about A = ${sumM_aboutA.toFixed(0)} Nmm`);
+        reactionSteps.push(`Equilibrium: $R_B \\times L = \\sum M_A$`);
+        reactionSteps.push(`$R_B = \\frac{${sumM_aboutA.toFixed(0)}}{${L}} = \\mathbf{${Rb.toFixed(1)} \\text{ N}}$`);
+        reactionSteps.push(`Sum Vertical Forces: $R_A + R_B = \\sum P_{load}$`);
+        reactionSteps.push(`$R_A = ${sumP.toFixed(1)} - ${Rb.toFixed(1)} = \\mathbf{${Ra.toFixed(1)} \\text{ N}}$`);
+    } else {
+        // Cantilever
+        Ra = sumP;
+        Ma = sumM_aboutA;
+        Rb = 0; 
+        reactionSteps.push(`Cantilever Support (A):`);
+        reactionSteps.push(`$R_A = \\sum P = \\mathbf{${Ra.toFixed(1)} \\text{ N}}$ (Vertical Reaction)`);
+        reactionSteps.push(`$M_A = \\sum M_{loads} = \\mathbf{${(Ma/1e6).toFixed(2)} \\text{ kNm}}$ (Wall Moment)`);
+    }
+
+    // Discretization for Diagrams
+    const pts = 200;
+    const dx = L / pts;
+    const X = [], V_arr = [], M_arr = [];
+    let maxM = 0, maxV = 0;
+
+    for(let i=0; i<=pts; i++) {
+        let x = i*dx;
+        X.push(x.toFixed(0));
+        
+        // Shear and Moment at x
+        // Cut left
+        let v = Ra;
+        let m = (supportType==='cantilever' ? -Ma + Ra*x : Ra*x);
+        
+        loads.forEach(l => {
+            if(l.type === 'point') {
+                if(x > l.x) {
+                    v -= l.P;
+                    m -= l.P * (x - l.x);
+                }
+            } else {
+                if(x > l.x1) {
+                    let activeX = Math.min(x, l.x2);
+                    let run = activeX - l.x1;
+                    let F = l.w * run;
+                    v -= F;
+                    let cent = l.x1 + run/2;
+                    m -= F * (x - cent);
+                }
+            }
+        });
+
+        V_arr.push(v);
+        M_arr.push(m);
+        if(Math.abs(m) > Math.abs(maxM)) maxM = Math.abs(m);
+        if(Math.abs(v) > Math.abs(maxV)) maxV = Math.abs(v);
+    }
+
+    // Deflection Integration (Trapezoidal)
+    let slope = [0], y = [0];
+    let EI = matE * Ix;
+    // 1. Integrate M -> Slope*EI
+    for(let i=0; i<pts; i++) {
+        let m_avg = (M_arr[i]+M_arr[i+1])/2;
+        slope.push(slope[i] + m_avg*dx);
+    }
+    // 2. Integrate Slope -> y*EI
+    for(let i=0; i<pts; i++) {
+        let s_avg = (slope[i]+slope[i+1])/2;
+        y.push(y[i] + s_avg*dx);
+    }
+    // 3. BC Correction
+    let deflFinal = [];
+    let maxDef = 0;
+    if(supportType === 'pinned') {
+        // y(0)=0 is set. y(L) must be 0.
+        // Current y(L) is y[end]. We rotate by subtracting C1*x
+        let C1 = y[y.length-1] / L;
+        for(let i=0; i<=pts; i++) {
+            let val = -1 * (y[i] - C1*(i*dx)) / EI; // -1 for sign convention
+            deflFinal.push(val);
+            if(Math.abs(val) > maxDef) maxDef = Math.abs(val);
+        }
+    } else {
+        // Cantilever y(0)=0, slope(0)=0 matches integration start
+        for(let i=0; i<=pts; i++) {
+            let val = y[i] / EI; // M is negative for cantilever load down -> y negative
+            deflFinal.push(val);
+            if(Math.abs(val) > maxDef) maxDef = Math.abs(val);
+        }
+    }
+
+    // 5. Results Display
+    const sigma = maxM / Wy;
+    const util = (sigma / matFy) * 100;
+
+    document.getElementById('resUtil').innerHTML = util.toFixed(1) + "%";
+    document.getElementById('resStress').innerHTML = sigma.toFixed(1);
+    document.getElementById('resDefl').innerHTML = maxDef.toFixed(2);
+    document.getElementById('resMom').innerHTML = (maxM/1e6).toFixed(2);
+
+    const badge = document.getElementById('passFailBadge');
+    if(util <= 100) {
+        badge.innerHTML = "PASSED"; badge.className = "status-pass";
+    } else {
+        badge.innerHTML = "FAILED (Yield)"; badge.className = "status-fail";
+    }
+
+    // 6. Detailed Report Generation
+    let html = "";
+    
+    // Step 1: Init
+    html += `<div class="step-block"><div class="step-title">1. Load Conversion (kg $\\to$ N)</div>`;
+    html += `<p>Using gravity $g = ${G} m/s^2$.</p><ul>`;
+    loadReportSteps.forEach(s => html += `<li>${s}</li>`);
+    html += `</ul></div>`;
+
+    // Step 2: Properties
+    html += `<div class="step-block"><div class="step-title">2. Section Properties</div>`;
+    html += `<p><strong>Section:</strong> ${name}</p>`;
+    html += `<div class="equation">$$I_y = ${Ix.toExponential(2)} \\text{ mm}^4$$</div>`;
+    html += `<div class="equation">$$W_{el} = ${Wy.toExponential(2)} \\text{ mm}^3$$</div>`;
+    html += `<p>Material: E = ${matE} MPa, Yield = ${matFy} MPa</p></div>`;
+
+    // Step 3: Reactions
+    html += `<div class="step-block"><div class="step-title">3. Reaction Calculation</div>`;
+    reactionSteps.forEach(s => html += `<p>${s}</p>`);
+    html += `</div>`;
+
+    // Step 4: Stress
+    html += `<div class="step-block"><div class="step-title">4. Bending Stress Check</div>`;
+    html += `<p>Maximum Bending Moment found from diagram:</p>`;
+    html += `<div class="equation">$$M_{max} = ${(maxM/1e6).toFixed(2)} \\text{ kNm} = ${(maxM).toFixed(0)} \\text{ Nmm}$$</div>`;
+    html += `<p>Bending Stress Formula:</p>`;
+    html += `<div class="equation">$$\\sigma = \\frac{M_{max}}{W_{el}} = \\frac{${(maxM).toFixed(0)}}{${Wy.toFixed(0)}}$$</div>`;
+    html += `<div class="equation">$$\\sigma = \\mathbf{${sigma.toFixed(2)} \\text{ MPa}}$$</div>`;
+    html += `<p>Utilization against Yield (${matFy} MPa):</p>`;
+    html += `<div class="equation">$$U = \\frac{${sigma.toFixed(2)}}{${matFy}} = \\mathbf{${util.toFixed(1)} \\%}$$</div>`;
+    html += `</div>`;
+
+    document.getElementById('fullReport').innerHTML = html;
+    MathJax.typesetPromise();
+
+    // 7. Render Charts
+    renderChart('shearChart', 'Shear (kN)', X, V_arr.map(v=>v/1000), '#dc3545');
+    renderChart('momentChart', 'Moment (kNm)', X, M_arr.map(m=>m/1e6), '#0056b3');
+    renderChart('deflChart', 'Deflection (mm)', X, deflFinal, '#28a745');
+
+    switchTab('results');
 }
 
 /**
- * DRAWING (CANVAS)
+ * SCHEMATIC & CHARTS
  */
 function drawBeamSchematic() {
     const canvas = document.getElementById('beamCanvas');
@@ -383,431 +602,67 @@ function drawBeamSchematic() {
     const L = parseFloat(document.getElementById('beamLength').value);
     const w = canvas.width = canvas.parentElement.offsetWidth;
     const h = canvas.height = 200;
-    
-    // Scaling
     const pad = 40;
     const scale = (w - 2*pad) / L;
-    const y0 = h/2; // Beam axis Y
+    const y0 = h/2;
 
     ctx.clearRect(0,0,w,h);
     
-    // Draw Beam
-    ctx.beginPath();
-    ctx.lineWidth = 6;
-    ctx.strokeStyle = '#333';
-    ctx.moveTo(pad, y0);
-    ctx.lineTo(pad + L*scale, y0);
-    ctx.stroke();
-
-    // Draw Supports
-    const suppType = document.getElementById('supportType').value;
+    // Beam
+    ctx.lineWidth = 6; ctx.strokeStyle = '#333';
+    ctx.beginPath(); ctx.moveTo(pad, y0); ctx.lineTo(pad+L*scale, y0); ctx.stroke();
     
-    // Support A (Left)
-    drawSupport(ctx, pad, y0 + 3, 'pin');
-    
-    // Support B (Right)
-    if(suppType === 'pinned') {
-        drawSupport(ctx, pad + L*scale, y0 + 3, 'roller');
-    } else {
-        // Cantilever (Fixed at Left)
-        ctx.beginPath();
-        ctx.lineWidth = 4;
-        ctx.moveTo(pad, y0-20);
-        ctx.lineTo(pad, y0+20);
-        // Hatching
-        for(let i=-20; i<20; i+=5) {
-            ctx.moveTo(pad, y0+i);
-            ctx.lineTo(pad-5, y0+i+5);
-        }
-        ctx.stroke();
+    // Supports
+    const st = document.getElementById('supportType').value;
+    drawSupport(ctx, pad, y0, 'pin');
+    if(st === 'pinned') drawSupport(ctx, pad+L*scale, y0, 'roller');
+    else {
+        ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(pad, y0-20); ctx.lineTo(pad, y0+20); ctx.stroke();
     }
 
-    // Draw Loads
-    const loadList = getLoadsFromUI();
-    ctx.fillStyle = '#dc3545';
-    ctx.strokeStyle = '#dc3545';
-    
-    loadList.forEach(load => {
-        if(load.type === 'point') {
-            const x = pad + load.x * scale;
-            drawArrow(ctx, x, y0 - 50, x, y0 - 5);
-            ctx.fillText(`${load.P/1000}kN`, x-15, y0-55);
+    // Loads
+    ctx.fillStyle = '#dc3545'; ctx.strokeStyle = '#dc3545'; ctx.font = "12px sans-serif";
+    document.querySelectorAll('#loadList > .card').forEach(div => {
+        const type = div.querySelector('.l-type').value;
+        if(type === 'point') {
+            const mass = div.querySelector('.l-mass').value;
+            const x = parseFloat(div.querySelector('.l-pos').value) * scale + pad;
+            drawArrow(ctx, x, y0-50, x, y0-5);
+            ctx.fillText(`${mass}kg`, x-15, y0-55);
         } else {
-            const x1 = pad + load.x1 * scale;
-            const x2 = pad + load.x2 * scale;
-            ctx.globalAlpha = 0.3;
-            ctx.fillRect(x1, y0-30, x2-x1, 28);
-            ctx.globalAlpha = 1.0;
-            ctx.fillText(`${load.w} N/mm`, x1, y0-35);
-            // small arrows
-            for(let ax = x1; ax <= x2; ax += (x2-x1)/5) {
-                if(x2-x1 < 10 && ax > x1) break; 
-                drawArrow(ctx, ax, y0-30, ax, y0-3);
-            }
+            const x1 = parseFloat(div.querySelector('.l-x1').value) * scale + pad;
+            const x2 = parseFloat(div.querySelector('.l-x2').value) * scale + pad;
+            const m_len = div.querySelector('.l-mass-len').value;
+            ctx.globalAlpha = 0.2; ctx.fillRect(x1, y0-30, x2-x1, 25); ctx.globalAlpha = 1.0;
+            ctx.fillText(`${m_len}kg/m`, x1, y0-35);
         }
     });
 }
 
 function drawSupport(ctx, x, y, type) {
-    ctx.beginPath();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = '#0056b3';
-    ctx.fillStyle = '#white';
-    if(type === 'pin') {
-        ctx.moveTo(x, y);
-        ctx.lineTo(x-10, y+15);
-        ctx.lineTo(x+10, y+15);
-        ctx.closePath();
-    } else {
-        ctx.arc(x, y+10, 8, 0, Math.PI*2);
-    }
-    ctx.stroke();
-    // Ground
-    ctx.beginPath();
-    ctx.moveTo(x-15, y+15);
-    ctx.lineTo(x+15, y+15);
+    ctx.strokeStyle = '#0056b3'; ctx.lineWidth = 2; ctx.beginPath();
+    if(type=='pin') { ctx.moveTo(x,y); ctx.lineTo(x-8,y+12); ctx.lineTo(x+8,y+12); ctx.closePath(); }
+    else { ctx.arc(x,y+8, 6, 0, Math.PI*2); }
     ctx.stroke();
 }
 
-function drawArrow(ctx, fromx, fromy, tox, toy) {
-    const headlen = 10; 
-    const dx = tox - fromx;
-    const dy = toy - fromy;
-    const angle = Math.atan2(dy, dx);
-    ctx.beginPath();
-    ctx.moveTo(fromx, fromy);
-    ctx.lineTo(tox, toy);
-    ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
-    ctx.moveTo(tox, toy);
-    ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+function drawArrow(ctx, fx, fy, tx, ty) {
+    const head = 10;
+    const angle = Math.atan2(ty-fy, tx-fx);
+    ctx.beginPath(); ctx.moveTo(fx,fy); ctx.lineTo(tx,ty);
+    ctx.lineTo(tx-head*Math.cos(angle-Math.PI/6), ty-head*Math.sin(angle-Math.PI/6));
+    ctx.moveTo(tx,ty);
+    ctx.lineTo(tx-head*Math.cos(angle+Math.PI/6), ty-head*Math.sin(angle+Math.PI/6));
     ctx.stroke();
 }
 
-/**
- * CALCULATION ENGINE
- */
-function calculateBeam() {
-    // 1. Get Inputs
-    const L = parseFloat(document.getElementById('beamLength').value);
-    const matE = parseFloat(document.getElementById('matE').value);
-    const matFy = parseFloat(document.getElementById('matFy').value);
-    const supportType = document.getElementById('supportType').value;
-    const loads = getLoadsFromUI();
-
-    // 2. Section Properties
-    let Ix, A, Wy, h_sec;
-    const secType = document.getElementById('sectionType').value;
-    
-    // Report Logs
-    let reportHTML = "";
-    
-    if (secType === 'IPE') {
-        const size = document.getElementById('ipeSize').value;
-        const dat = IPE_DB[size];
-        Ix = dat.Iy; // mm4
-        A = dat.A;
-        Wy = dat.Wy; // Elastic modulus
-        h_sec = dat.h;
-        reportHTML += `<p><strong>Section:</strong> IPE ${size}</p>`;
-        reportHTML += `<p class="latex-like">I = ${Ix.toExponential(2)} mm^4, W_{el} = ${Wy.toExponential(2)} mm^3</p>`;
-    } else if (secType === 'SOLID') {
-        const b = parseFloat(document.getElementById('solidB').value);
-        const h = parseFloat(document.getElementById('solidH').value);
-        Ix = (b * Math.pow(h,3)) / 12;
-        Wy = (b * Math.pow(h,2)) / 6;
-        h_sec = h;
-        reportHTML += `<p><strong>Section:</strong> Solid Rect ${b}x${h} mm</p>`;
-        reportHTML += `<p class="latex-like">I = \\frac{bh^3}{12} = ${Ix.toExponential(2)} mm^4</p>`;
-    } else if (secType === 'RHS') {
-        const b = parseFloat(document.getElementById('rhsB').value);
-        const h = parseFloat(document.getElementById('rhsH').value);
-        const t = parseFloat(document.getElementById('rhsT').value);
-        const bi = b - 2*t;
-        const hi = h - 2*t;
-        const I_out = (b * Math.pow(h,3)) / 12;
-        const I_in = (bi * Math.pow(hi,3)) / 12;
-        Ix = I_out - I_in;
-        Wy = Ix / (h/2);
-        h_sec = h;
-        reportHTML += `<p><strong>Section:</strong> RHS ${h}x${b}x${t} mm</p>`;
-        reportHTML += `<p class="latex-like">I = I_{outer} - I_{inner} = ${Ix.toExponential(2)} mm^4</p>`;
-    } else if (secType === 'ANGLE') {
-        // Simplified about centroid parallel to legs (rough approx for demo, real angle calc is complex due to principal axes)
-        const a = parseFloat(document.getElementById('angleA').value);
-        const b = parseFloat(document.getElementById('angleB').value);
-        const t = parseFloat(document.getElementById('angleT').value);
-        // Centroid y calc
-        const A1 = a*t; const y1 = a/2;
-        const A2 = (b-t)*t; const y2 = t/2; 
-        const Atotal = A1+A2;
-        const cy = (A1*y1 + A2*y2) / Atotal;
-        // I calc
-        const I1 = (t*Math.pow(a,3))/12 + A1*Math.pow(y1-cy, 2);
-        const I2 = ((b-t)*Math.pow(t,3))/12 + A2*Math.pow(y2-cy, 2);
-        Ix = I1 + I2;
-        // dist to extreme fiber
-        const y_extreme = Math.max(cy, a-cy);
-        Wy = Ix / y_extreme;
-        h_sec = a; // height
-        reportHTML += `<p><strong>Section:</strong> Angle ${a}x${b}x${t} mm</p>`;
-        reportHTML += `<p>Calculated Centroid Y: ${cy.toFixed(1)} mm</p>`;
-        reportHTML += `<p class="latex-like">I_x = ${Ix.toExponential(2)} mm^4, W_x = ${Wy.toExponential(2)} mm^3</p>`;
-    }
-
-    document.getElementById('sectionProps').innerHTML = `
-        A = ${(Ix/(h_sec)).toFixed(0)} mm² (approx)<br>
-        Ix = ${(Ix/10000).toFixed(2)} cm⁴<br>
-        Wx = ${(Wy/1000).toFixed(2)} cm³
-    `;
-
-    // 3. Solve Beam (Reactions)
-    let Ra = 0, Rb = 0, Ma = 0; // Ma is wall moment
-    
-    let sumP = 0; // Total vertical load
-    let sumMomA = 0; // Moment about A due to loads
-
-    loads.forEach(l => {
-        if(l.type === 'point') {
-            sumP += l.P;
-            sumMomA += l.P * l.x;
-        } else {
-            const len = l.x2 - l.x1;
-            const F = l.w * len;
-            const center = l.x1 + len/2;
-            sumP += F;
-            sumMomA += F * center;
-        }
-    });
-
-    let reactionHTML = "";
-
-    if (supportType === 'pinned') {
-        // Sum Moments about A = 0 -> Rb * L - SumMomA = 0
-        Rb = sumMomA / L;
-        Ra = sumP - Rb;
-        reactionHTML += `<p><strong>Equilibrium Equations:</strong></p>`;
-        reactionHTML += `<p class="latex-like">\\sum M_A = 0 \\Rightarrow R_B \\cdot ${L} = \\sum (P_i \\cdot x_i)</p>`;
-        reactionHTML += `<p class="latex-like">R_B = ${Rb.toFixed(1)} N = ${(Rb/1000).toFixed(2)} kN</p>`;
-        reactionHTML += `<p class="latex-like">\\sum F_y = 0 \\Rightarrow R_A + R_B = TotalLoad</p>`;
-        reactionHTML += `<p class="latex-like">R_A = ${Ra.toFixed(1)} N = ${(Ra/1000).toFixed(2)} kN</p>`;
-    } else {
-        // Cantilever (Fixed at A)
-        Ra = sumP;
-        Ma = sumMomA; // Wall moment reaction opposes load moments
-        reactionHTML += `<p><strong>Equilibrium (Cantilever):</strong></p>`;
-        reactionHTML += `<p class="latex-like">R_A = \\sum P = ${Ra.toFixed(1)} N</p>`;
-        reactionHTML += `<p class="latex-like">M_{wall} = \\sum M_{loads} = ${(Ma/1000000).toFixed(2)} kNm</p>`;
-    }
-
-    document.getElementById('reactionResults').innerHTML = reactionHTML;
-    reportHTML += reactionHTML;
-
-    // 4. Numerical Calculation for Diagrams (Discretization)
-    const points = 200;
-    const dx = L / points;
-    const X = [];
-    const V = [];
-    const M = [];
-    const Defl = [];
-
-    // Integration constants
-    // We calculate M(x) directly from statics at each point x
-    // Then we integrate M/EI twice for deflection.
-
-    let maxM = 0;
-    let maxV = 0;
-
-    for (let i = 0; i <= points; i++) {
-        const x = i * dx;
-        X.push(x.toFixed(0));
-
-        // Calculate Shear V(x) and Moment M(x) using Method of Sections (Cutting from Left)
-        // Sign Convention: Upward forces cause positive Shear jump. Sagging Moment positive.
-        
-        let v_val = Ra;
-        let m_val = (supportType === 'cantilever') ? -Ma + Ra*x : Ra*x;
-
-        loads.forEach(l => {
-            if(l.type === 'point') {
-                if (x > l.x) {
-                    v_val -= l.P;
-                    m_val -= l.P * (x - l.x);
-                }
-            } else {
-                // UDL
-                if (x > l.x1) {
-                    const active_end = Math.min(x, l.x2);
-                    const run = active_end - l.x1;
-                    const F = l.w * run;
-                    v_val -= F;
-                    // Moment arm from centroid of load part
-                    const centroid = l.x1 + run/2;
-                    m_val -= F * (x - centroid);
-                }
-            }
-        });
-        
-        // Handle Rb if we passed L (mostly for end check, but internal points < L don't see Rb)
-        // Actually, for plots 0..L, we don't add Rb impact unless x > L.
-
-        V.push(v_val);
-        M.push(m_val);
-
-        if(Math.abs(m_val) > Math.abs(maxM)) maxM = Math.abs(m_val);
-        if(Math.abs(v_val) > Math.abs(maxV)) maxV = Math.abs(v_val);
-    }
-
-    // 5. Deflection (Double Integration of M array)
-    // Curvature phi = M / EI
-    const EI = matE * Ix; 
-    let slope = [];
-    let y_defl = [];
-    
-    // Integrate M -> Slope * EI
-    let cum_slope = 0;
-    slope.push(0);
-    for(let i=0; i<points; i++) {
-        // Trapezoidal rule
-        const m_avg = (M[i] + M[i+1])/2;
-        cum_slope += m_avg * dx; 
-        slope.push(cum_slope);
-    }
-
-    // Integrate Slope -> Deflection * EI
-    let cum_y = 0;
-    y_defl.push(0);
-    for(let i=0; i<points; i++) {
-        const s_avg = (slope[i] + slope[i+1])/2;
-        cum_y += s_avg * dx;
-        y_defl.push(cum_y);
-    }
-
-    // Boundary Conditions correction
-    // y(x) = y_integ(x) + C1*x + C2
-    // For Cantilever (Fixed at 0): y(0)=0, theta(0)=0. 
-    // Our integration started from 0 assuming C1=0, C2=0. So arrays are correct for Cantilever.
-    
-    // For Simply Supported: y(0)=0, y(L)=0.
-    // Our arrays have y(0)=0 (C2=0). But y(L) might not be 0.
-    // We need to rotate the whole curve: subtract C1*x where C1 = y_defl[end] / L
-    
-    let finalDefl = [];
-    let maxDef = 0;
-
-    if (supportType === 'pinned') {
-        const y_end = y_defl[y_defl.length-1];
-        const C1 = y_end / L; // Slope correction constant
-        
-        for(let i=0; i<=points; i++) {
-            const x = i * dx;
-            // Actual y = (1/EI) * (y_int - C1*EI*x)
-            let val = (y_defl[i] - C1 * x) / EI;
-            // Sign: usually load is down (-), so M is positive (sagging), so Curvature positive.
-            // d2y/dx2 = -M/EI (standard beam sign convention).
-            // So we invert the sign.
-            val = -val; 
-            finalDefl.push(val);
-            if(Math.abs(val) > Math.abs(maxDef)) maxDef = Math.abs(val);
-        }
-    } else {
-        // Cantilever
-        for(let i=0; i<=points; i++) {
-            let val = y_defl[i] / EI;
-            // For cantilever with down load, M is negative (hogging).
-            // d2y/dx2 = M/EI.
-            // If M is negative, curvature negative (frown).
-            // Direct integration gives correct shape.
-            finalDefl.push(val); 
-            if(Math.abs(val) > Math.abs(maxDef)) maxDef = Math.abs(val);
-        }
-    }
-
-    // 6. Stress Checks
-    const stress = (maxM / Wy); // MPa (Nmm / mm3)
-    const util = (stress / matFy) * 100;
-    const defRatio = L / maxDef;
-
-    // 7. Update Results Tab
-    document.getElementById('resUtil').innerText = util.toFixed(1) + "%";
-    document.getElementById('resUtil').style.color = util > 100 ? "red" : "green";
-    
-    document.getElementById('resStress').innerText = stress.toFixed(1);
-    document.getElementById('resDefl').innerText = maxDef.toFixed(2);
-    document.getElementById('resRatio').innerText = "L / " + defRatio.toFixed(0);
-
-    const badge = document.getElementById('passFailBadge');
-    if(util <= 100) {
-        badge.innerHTML = "STATUS: PASS (Strength)";
-        badge.className = "status-pass";
-    } else {
-        badge.innerHTML = "STATUS: FAIL (Yield)";
-        badge.className = "status-fail";
-    }
-
-    // 8. Generate Charts
-    renderChart('shearChart', 'Shear Force (V)', X, V.map(v=>v/1000), 'kN', '#dc3545');
-    renderChart('momentChart', 'Bending Moment (M)', X, M.map(m=>m/1000000), 'kNm', '#0056b3');
-    renderChart('deflChart', 'Deflection', X, finalDefl, 'mm', '#28a745', true);
-
-    // 9. Final Report Text
-    reportHTML += `<hr><h3>Calculated Results</h3>`;
-    reportHTML += `<p><strong>Max Shear Force (V):</strong> ${(maxV/1000).toFixed(2)} kN</p>`;
-    reportHTML += `<p><strong>Max Bending Moment (M):</strong> ${(maxM/1000000).toFixed(2)} kNm</p>`;
-    reportHTML += `<p><strong>Bending Stress:</strong></p>`;
-    reportHTML += `<p class="latex-like">\\sigma = \\frac{M_{max}}{W_{el}} = \\frac{${(maxM).toExponential(2)}}{${Wy.toExponential(2)}} = ${stress.toFixed(2)} \\text{ MPa}</p>`;
-    reportHTML += `<p><strong>Utilization:</strong> ${util.toFixed(1)}% (Limit ${matFy} MPa)</p>`;
-    reportHTML += `<p><strong>Max Deflection:</strong> ${maxDef.toFixed(2)} mm (Span/ ${defRatio.toFixed(0)})</p>`;
-    
-    if(supportType === 'pinned' && loads.length === 1 && loads[0].type === 'point' && loads[0].x === L/2) {
-        reportHTML += `<p><em>Verification for SS Midspan Point Load:</em> <br>Formula: PL/4 = ${(loads[0].P*L/4/1e6).toFixed(2)} kNm. <br>Deflection Formula: PL³/48EI.</p>`;
-    }
-    
-    document.getElementById('fullReport').innerHTML = reportHTML;
-    switchTab('results');
-}
-
-/**
- * CHARTING HELPER
- */
-function renderChart(canvasId, label, labels, data, unit, color, fill=true) {
-    const ctx = document.getElementById(canvasId).getContext('2d');
-    if(charts[canvasId]) charts[canvasId].destroy();
-    
-    charts[canvasId] = new Chart(ctx, {
+function renderChart(id, label, x, y, color) {
+    const ctx = document.getElementById(id).getContext('2d');
+    if(charts[id]) charts[id].destroy();
+    charts[id] = new Chart(ctx, {
         type: 'line',
-        data: {
-            labels: labels, // X coordinates
-            datasets: [{
-                label: `${label} [${unit}]`,
-                data: data,
-                borderColor: color,
-                backgroundColor: color + '33', // transparent version
-                borderWidth: 2,
-                pointRadius: 0,
-                fill: fill
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                x: { display: true, title: {display:true, text:'Length (mm)'}, ticks: { maxTicksLimit: 10 } },
-                y: { display: true }
-            },
-            interaction: {
-                mode: 'index',
-                intersect: false,
-            },
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return context.parsed.y.toFixed(2) + " " + unit;
-                        }
-                    }
-                }
-            }
-        }
+        data: { labels: x, datasets: [{ label: label, data: y, borderColor: color, backgroundColor: color+'22', borderWidth: 2, pointRadius: 0, fill: true }] },
+        options: { responsive: true, maintainAspectRatio: false, scales: { x: { display:true, ticks:{maxTicksLimit:8} } }, plugins:{ legend:{display:false}, tooltip:{intersect:false, mode:'index'} } }
     });
 }
 </script>
