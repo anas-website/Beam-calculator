@@ -3,630 +3,638 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Expert Beam Calculator</title>
+    <title>Student Beam Master</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <style>
-        :root {
-            --primary: #0056b3;
-            --bg: #f4f4f9;
-            --card-bg: #fff;
-            --text: #333;
-            --border: #ddd;
-        }
-        body { font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background: var(--bg); color: var(--text); transition: all 0.3s; }
+        :root { --p: #0d6efd; --bg: #f8f9fa; --txt: #212529; --bor: #dee2e6; }
+        body { font-family: "Segoe UI", Roboto, Arial, sans-serif; background: var(--bg); color: var(--txt); margin:0; padding:0; }
         
-        /* RTL Support */
-        body[dir="rtl"] { font-family: "Segoe UI", "Alef", sans-serif; }
+        /* Header & Nav */
+        header { background: var(--p); color: white; padding: 1rem; display: flex; justify-content: space-between; align-items: center; }
+        .tabs { display: flex; background: white; border-bottom: 1px solid var(--bor); position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .tab { flex: 1; padding: 1rem; border: none; background: none; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s; }
+        .tab:hover { background: #f1f3f5; }
+        .tab.active { border-bottom-color: var(--p); color: var(--p); background: #e7f1ff; }
         
         /* Layout */
-        .container { max-width: 1200px; margin: 0 auto; padding: 10px; }
-        header { background: var(--primary); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 15px; }
+        .panel { display: none; animation: fadeIn 0.3s; }
+        .panel.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Language Toggle */
-        .lang-switch select { padding: 5px; border-radius: 4px; border: none; cursor: pointer; }
-
-        /* Tabs */
-        .tabs { display: flex; overflow-x: auto; background: white; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
-        .tab-btn { flex: 1; padding: 15px; border: none; background: none; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; min-width: 100px; }
-        .tab-btn.active { border-bottom-color: var(--primary); color: var(--primary); background: #eef6fc; }
-
-        /* Content */
-        .tab-content { display: none; padding: 20px 5px; }
-        .tab-content.active { display: block; }
-        .card { background: var(--card-bg); padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px; }
-        .card h3 { margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 10px; color: var(--primary); }
-
-        /* Forms */
+        /* Components */
+        .card { background: white; padding: 20px; border-radius: 8px; border: 1px solid var(--bor); margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+        .card h3 { margin-top: 0; color: var(--p); border-bottom: 1px solid var(--bor); padding-bottom: 10px; font-size: 1.1rem; }
         .row { display: flex; gap: 15px; flex-wrap: wrap; }
-        .col { flex: 1; min-width: 200px; }
-        label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 0.9rem; }
-        input, select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 4px; box-sizing: border-box; }
+        .col { flex: 1; min-width: 180px; }
         
-        /* Actions */
-        .btn { width: 100%; padding: 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s; }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:hover { background: #004494; }
-        .btn-danger { background: #dc3545; color: white; width: auto; padding: 5px 10px; font-size: 0.8rem; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; box-sizing: border-box; }
+        input:focus, select:focus { border-color: var(--p); outline: none; box-shadow: 0 0 0 3px rgba(13,110,253,0.15); }
+        label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 0.9rem; color: #495057; }
         
-        /* Results Grid */
-        .res-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
-        .res-box { background: #f8f9fa; padding: 15px; border-radius: 6px; text-align: center; border: 1px solid #eee; }
-        .res-val { display: block; font-size: 1.4rem; font-weight: bold; color: var(--primary); }
-        .res-lbl { font-size: 0.85rem; color: #666; }
+        .btn { width: 100%; padding: 12px; background: var(--p); color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn:hover { background: #0b5ed7; }
+        .btn-del { background: #dc3545; width: auto; padding: 5px 10px; font-size: 0.8rem; }
         
-        .status-pass { color: #28a745; background: #d4edda; padding: 5px; border-radius: 4px; }
-        .status-fail { color: #dc3545; background: #f8d7da; padding: 5px; border-radius: 4px; }
-
-        /* Detailed Report */
-        .step-block { margin-bottom: 25px; border-left: 4px solid var(--primary); padding-left: 15px; background: #fff; }
-        body[dir="rtl"] .step-block { border-left: none; border-right: 4px solid var(--primary); padding-left: 0; padding-right: 15px; }
-        .step-head { font-weight: bold; font-size: 1.1em; color: #444; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .calc-row { margin: 12px 0; font-family: "Segoe UI", sans-serif; border-bottom:1px dashed #eee; padding-bottom:10px; }
-        .latex-box { overflow-x: auto; padding: 10px; background: #fafafa; border-radius: 4px; text-align: center; margin-top:5px; border:1px solid #eee; }
-        .sub-step { font-size:0.9rem; color:#555; margin-left:10px; font-family: monospace; background: #fdfdfd; padding:2px 5px;}
-
-        .hidden { display: none; }
+        /* Report Styling */
+        .step-box { background: #fff; border-left: 5px solid var(--p); padding: 15px; margin-bottom: 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .step-title { font-weight: bold; color: var(--p); text-transform: uppercase; font-size: 0.9rem; letter-spacing: 1px; margin-bottom: 15px; }
+        
+        .math-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #eee; font-family: 'Segoe UI', sans-serif; }
+        .math-desc { font-weight: 500; color: #333; flex: 1; }
+        .math-eq { background: #f8f9fa; padding: 5px 15px; border-radius: 4px; font-size: 1.1em; }
+        .math-sub { font-family: monospace; color: #555; font-size: 0.9em; background: #fff; padding: 2px 5px; border: 1px solid #eee; border-radius: 3px; margin: 0 10px; }
+        .math-res { font-weight: bold; color: var(--p); font-size: 1.1em; min-width: 80px; text-align: right; }
+        
+        .note { font-size: 0.85rem; color: #666; font-style: italic; margin-top: 5px; }
+        .badge-pass { background: #d1e7dd; color: #0f5132; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
+        .badge-fail { background: #f8d7da; color: #842029; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
     </style>
 </head>
-<body dir="ltr">
+<body>
 
 <header>
-    <div>
-        <h1 id="appTitle">Expert Beam Calculator</h1>
-        <div style="font-size:0.8rem; opacity:0.8;">Student Mode | Detailed Steps | Custom Sections</div>
-    </div>
-    <div class="lang-switch">
-        <select id="langSelect" onchange="changeLanguage()">
-            <option value="en">English</option>
-            <option value="he">עברית</option>
-        </select>
-    </div>
+    <h2>Student Beam Master</h2>
+    <div style="font-size:0.9rem; opacity:0.9;">Step-by-Step Structural Analysis</div>
 </header>
 
 <div class="tabs">
-    <button class="tab-btn active" onclick="ui.tab('geometry')" data-i18n="tab_geo">1. Geometry</button>
-    <button class="tab-btn" onclick="ui.tab('loads')" data-i18n="tab_loads">2. Loads</button>
-    <button class="tab-btn" onclick="ui.tab('design')" data-i18n="tab_design">3. Design Checks</button>
-    <button class="tab-btn" onclick="ui.tab('report')" data-i18n="tab_report">4. Full Report</button>
+    <button class="tab active" onclick="ui.setTab('geo')">1. Geometry</button>
+    <button class="tab" onclick="ui.setTab('loads')">2. Loads</button>
+    <button class="tab" onclick="ui.setTab('results')">3. Results & Report</button>
 </div>
 
 <div class="container">
-
-    <div id="geometry" class="tab-content active">
+    
+    <div id="geo" class="panel active">
         <div class="card">
-            <h3 data-i18n="sec_material">Material</h3>
+            <h3>Material Properties</h3>
             <div class="row">
                 <div class="col">
-                    <label data-i18n="lbl_mat_type">Type</label>
-                    <select id="matType" onchange="solver.updateMat()">
-                        <option value="S235">Steel S235</option>
+                    <label>Material Preset</label>
+                    <select id="matType" onchange="solver.setMat()">
+                        <option value="S235">Steel S235 (St37)</option>
                         <option value="S275">Steel S275</option>
                         <option value="S355">Steel S355</option>
-                        <option value="Custom" data-i18n="opt_custom">Custom</option>
+                        <option value="AL">Aluminum 6061</option>
                     </select>
                 </div>
-                <div class="col"><label>E (MPa)</label><input type="number" id="matE" value="210000"></div>
-                <div class="col"><label>fy (MPa)</label><input type="number" id="matFy" value="235"></div>
+                <div class="col"><label>Elastic Modulus E (MPa)</label><input type="number" id="matE" value="210000"></div>
+                <div class="col"><label>Yield Strength fy (MPa)</label><input type="number" id="matFy" value="235"></div>
             </div>
         </div>
 
         <div class="card">
-            <h3 data-i18n="sec_section">Section Geometry</h3>
-            <div class="form-group">
-                <label data-i18n="lbl_sec_shape">Shape</label>
-                <select id="secShape" onchange="ui.toggleSection()">
-                    <option value="IPE">IPE (Standard I)</option>
-                    <option value="UPN">UPN (Standard C)</option>
-                    <option value="CUST_C" data-i18n="opt_cust_c">Custom C-Channel</option>
-                    <option value="LIPPED_C" data-i18n="opt_lipped_c">Lipped C (4 Bends)</option>
-                    <option value="RHS" data-i18n="opt_rhs">RHS (Hollow Rect)</option>
-                    <option value="SOLID" data-i18n="opt_solid">Solid Rectangle</option>
-                </select>
-            </div>
-
-            <div id="input-IPE" class="sec-inputs"><label data-i18n="lbl_size">Size</label><select id="ipeSize"></select></div>
-            <div id="input-UPN" class="sec-inputs hidden"><label data-i18n="lbl_size">Size</label><select id="upnSize"></select></div>
-            
-            <div id="input-CUST_C" class="sec-inputs hidden row">
-                <div class="col"><label>Height H (mm)</label><input type="number" id="ccH" value="200"></div>
-                <div class="col"><label>Width B (mm)</label><input type="number" id="ccB" value="80"></div>
-                <div class="col"><label>Web t_w (mm)</label><input type="number" id="ccTw" value="6"></div>
-                <div class="col"><label>Flange t_f (mm)</label><input type="number" id="ccTf" value="8"></div>
-            </div>
-
-            <div id="input-LIPPED_C" class="sec-inputs hidden row">
-                <div class="col"><label>Height H (mm)</label><input type="number" id="lcH" value="200"></div>
-                <div class="col"><label>Width B (mm)</label><input type="number" id="lcB" value="80"></div>
-                <div class="col"><label>Lip c (mm)</label><input type="number" id="lcC" value="20"></div>
-                <div class="col"><label>Thickness t (mm)</label><input type="number" id="lcT" value="4"></div>
-            </div>
-
-            <div id="input-RHS" class="sec-inputs hidden row">
-                <div class="col"><label>H (mm)</label><input type="number" id="rhsH" value="100"></div>
-                <div class="col"><label>B (mm)</label><input type="number" id="rhsB" value="50"></div>
-                <div class="col"><label>t (mm)</label><input type="number" id="rhsT" value="4"></div>
-            </div>
-            <div id="input-SOLID" class="sec-inputs hidden row">
-                <div class="col"><label>H (mm)</label><input type="number" id="solH" value="200"></div>
-                <div class="col"><label>B (mm)</label><input type="number" id="solB" value="100"></div>
-            </div>
-
-            <div style="margin-top:15px; background:#f0f8ff; padding:10px; border-radius:4px;">
-                <h4 style="margin:0 0 5px 0; font-size:0.9rem;" data-i18n="lbl_sec_props">Section Properties Preview:</h4>
-                <div id="liveProps" style="font-family:monospace; font-size:0.85rem;"></div>
-            </div>
-        </div>
-
-        <div class="card">
-            <h3 data-i18n="sec_span">Span & Supports</h3>
+            <h3>Section Geometry</h3>
             <div class="row">
-                <div class="col"><label data-i18n="lbl_length">Length L (mm)</label><input type="number" id="beamL" value="5000"></div>
                 <div class="col">
-                    <label data-i18n="lbl_support">Support Condition</label>
+                    <label>Section Shape</label>
+                    <select id="secShape" onchange="ui.toggleSec()">
+                        <option value="IPE">IPE (I-Beam)</option>
+                        <option value="UPN">UPN (C-Channel)</option>
+                        <option value="CC">Custom C-Channel</option>
+                        <option value="LC">Lipped C-Channel (4 Bends)</option>
+                        <option value="RHS">Rectangular Hollow</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div style="margin-top:15px; border-top:1px solid #eee; padding-top:15px;">
+                <div id="inp-IPE" class="inp-grp"><label>Standard Size</label><select id="ipeSize"></select></div>
+                <div id="inp-UPN" class="inp-grp hidden"><label>Standard Size</label><select id="upnSize"></select></div>
+                
+                <div id="inp-CC" class="inp-grp hidden row">
+                    <div class="col"><label>Height h (mm)</label><input type="number" id="ccH" value="200"></div>
+                    <div class="col"><label>Width b (mm)</label><input type="number" id="ccB" value="80"></div>
+                    <div class="col"><label>Web tw (mm)</label><input type="number" id="ccTw" value="6"></div>
+                    <div class="col"><label>Flange tf (mm)</label><input type="number" id="ccTf" value="10"></div>
+                </div>
+
+                <div id="inp-LC" class="inp-grp hidden row">
+                    <div class="col"><label>Height h (mm)</label><input type="number" id="lcH" value="200"></div>
+                    <div class="col"><label>Width b (mm)</label><input type="number" id="lcB" value="80"></div>
+                    <div class="col"><label>Lip c (mm)</label><input type="number" id="lcC" value="20"></div>
+                    <div class="col"><label>Thick t (mm)</label><input type="number" id="lcT" value="4"></div>
+                </div>
+
+                <div id="inp-RHS" class="inp-grp hidden row">
+                    <div class="col"><label>Height h (mm)</label><input type="number" id="rhH" value="150"></div>
+                    <div class="col"><label>Width b (mm)</label><input type="number" id="rhB" value="100"></div>
+                    <div class="col"><label>Thick t (mm)</label><input type="number" id="rhT" value="5"></div>
+                </div>
+            </div>
+            
+            <div style="margin-top:20px; background:#f8f9fa; padding:15px; border-radius:6px; display:flex; gap:20px; align-items:center;">
+                <div style="flex:1;">
+                    <h4 style="margin:0 0 5px 0;">Calculated Properties:</h4>
+                    <div id="liveProps" style="font-family:monospace; color:#0d6efd;"></div>
+                </div>
+                <canvas id="secCanvas" width="100" height="100" style="background:white; border:1px solid #ddd;"></canvas>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Beam Span</h3>
+            <div class="row">
+                <div class="col"><label>Length L (mm)</label><input type="number" id="beamL" value="5000"></div>
+                <div class="col">
+                    <label>Supports</label>
                     <select id="suppType">
-                        <option value="pinned" data-i18n="opt_pin">Simply Supported</option>
-                        <option value="cantilever" data-i18n="opt_cant">Cantilever</option>
+                        <option value="pin">Simply Supported (Pin-Roller)</option>
+                        <option value="cant">Cantilever (Fixed-Free)</option>
                     </select>
                 </div>
             </div>
         </div>
+        <button class="btn" onclick="ui.setTab('loads')">Next: Define Loads &rarr;</button>
     </div>
 
-    <div id="loads" class="tab-content">
-        <canvas id="beamCanvas" style="width:100%; height:200px; border:1px solid #ddd; border-radius:4px; background:white;"></canvas>
+    <div id="loads" class="panel">
         <div class="card">
-            <h3 data-i18n="sec_loadlist">Load Definition</h3>
-            <div id="loadContainer"></div>
-            <div style="margin-top:10px;">
-                <button class="btn btn-primary" style="width:auto; background:#6c757d;" onclick="ui.addLoad('point')">+ <span data-i18n="btn_pt">Point Mass (kg)</span></button>
-                <button class="btn btn-primary" style="width:auto; background:#6c757d;" onclick="ui.addLoad('udl')">+ <span data-i18n="btn_udl">Distrib. Mass (kg/m)</span></button>
-            </div>
+            <h3>Beam Schematic</h3>
+            <canvas id="beamCanvas" style="width:100%; height:180px;"></canvas>
+            <p class="note" style="text-align:center;">Loads defined in <strong>kg</strong> (Mass). Calculation converts to Force (N) using g=9.81 m/s².</p>
         </div>
+
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:10px;">
+                <h3 style="margin:0; border:none;">Load List</h3>
+                <div>
+                    <button class="btn" style="width:auto; margin:0; padding:8px 15px; background:#6c757d;" onclick="ui.addLoad('pt')">+ Point Load</button>
+                    <button class="btn" style="width:auto; margin:0; padding:8px 15px; background:#6c757d;" onclick="ui.addLoad('udl')">+ Dist. Load</button>
+                </div>
+            </div>
+            <div id="loadList" style="margin-top:15px;"></div>
+        </div>
+        <button class="btn" onclick="solver.solve()">CALCULATE & SHOW REPORT</button>
     </div>
 
-    <div id="design" class="tab-content">
+    <div id="results" class="panel">
         <div class="card">
-            <h3 data-i18n="sec_buckling">Column Buckling (Compression)</h3>
-            <div class="row">
-                <div class="col"><label data-i18n="lbl_ky">Buckling Factor Ky</label><input type="number" id="Ky" value="1.0" step="0.1"></div>
-                <div class="col"><label data-i18n="lbl_kz">Buckling Factor Kz</label><input type="number" id="Kz" value="1.0" step="0.1"></div>
+            <h3>Results Summary</h3>
+            <div class="row" style="text-align:center;">
+                <div class="col">
+                    <div style="font-size:0.9rem; color:#666;">Bending Stress</div>
+                    <div id="res-sig" style="font-size:1.5rem; font-weight:bold; color:#333;">0 MPa</div>
+                    <div id="badge-sig" class="badge-pass">PASS</div>
+                </div>
+                <div class="col">
+                    <div style="font-size:0.9rem; color:#666;">Shear Stress</div>
+                    <div id="res-tau" style="font-size:1.5rem; font-weight:bold; color:#333;">0 MPa</div>
+                    <div id="badge-tau" class="badge-pass">PASS</div>
+                </div>
+                <div class="col">
+                    <div style="font-size:0.9rem; color:#666;">Max Deflection</div>
+                    <div id="res-def" style="font-size:1.5rem; font-weight:bold; color:#333;">0 mm</div>
+                    <div id="res-ratio" style="font-size:0.8rem;">L/0</div>
+                </div>
             </div>
         </div>
+
         <div class="card">
-            <h3 data-i18n="sec_ltb">Lateral Torsional Buckling (LTB)</h3>
-            <div class="row">
-                <div class="col"><label data-i18n="lbl_lb">Unbraced Length Lb (mm)</label><input type="number" id="Lb" value="5000"></div>
-                <div class="col"><label data-i18n="lbl_c1">Moment Factor (C1)</label><select id="C1"><option value="1.0">1.00 (Safe)</option><option value="1.12">1.12 (UDL Pin)</option><option value="1.35">1.35 (Pt Load)</option></select></div>
-            </div>
+            <h3>Diagrams</h3>
+            <div style="height:250px;"><canvas id="chartV"></canvas></div>
+            <div style="height:250px; margin-top:20px;"><canvas id="chartM"></canvas></div>
         </div>
-        <button class="btn btn-primary" onclick="solver.run()" data-i18n="btn_calc">CALCULATE DETAILED REPORT</button>
+
+        <div id="reportLog"></div>
+        <button class="btn" onclick="window.print()">Print Report PDF</button>
     </div>
 
-    <div id="report" class="tab-content">
-        <div class="card">
-            <h3 data-i18n="res_summary">Results Summary</h3>
-            <div class="res-grid">
-                <div class="res-box"><span class="res-lbl" data-i18n="res_util_bend">Bending Util</span><span class="res-val" id="val_util_bend">0%</span><span id="badge_bend" class="status-pass">PASS</span></div>
-                <div class="res-box"><span class="res-lbl" data-i18n="res_util_shear">Shear Util</span><span class="res-val" id="val_util_shear">0%</span></div>
-                <div class="res-box"><span class="res-lbl" data-i18n="res_defl">Deflection</span><span class="res-val" id="val_defl">0 mm</span></div>
-                <div class="res-box"><span class="res-lbl" data-i18n="res_ltb">LTB Util</span><span class="res-val" id="val_util_ltb">--</span><span id="badge_ltb" class="status-pass">-</span></div>
-            </div>
-        </div>
-        <div class="card">
-            <h3 data-i18n="sec_graphs">Force Diagrams</h3>
-            <div style="height:200px"><canvas id="chartV"></canvas></div>
-            <div style="height:200px; margin-top:20px;"><canvas id="chartM"></canvas></div>
-        </div>
-        <div class="card">
-            <h3 data-i18n="sec_trace">Calculation Trace</h3>
-            <div id="traceLog"></div>
-        </div>
-        <button class="btn btn-primary" onclick="window.print()" data-i18n="btn_print">Print PDF</button>
-    </div>
 </div>
 
 <script>
 /** * --- DATA & CONFIG --- 
  */
-const DB_IPE = { 80:{h:80,b:46,A:764,Iy:80.1e4,Wy:20e3}, 100:{h:100,b:55,A:1030,Iy:171e4,Wy:34.2e3}, 120:{h:120,b:64,A:1320,Iy:318e4,Wy:53e3}, 200:{h:200,b:100,A:2850,Iy:1943e4,Wy:194e3} };
-const DB_UPN = { 80:{h:80,b:45,A:1100,Iy:106e4,Wy:26.5e3}, 100:{h:100,b:50,A:1350,Iy:206e4,Wy:41.2e3}, 200:{h:200,b:75,A:3220,Iy:1910e4,Wy:191e3} };
-const TR = {
-    en: {
-        tab_geo:"1. Geometry", tab_loads:"2. Loads", tab_design:"3. Design", tab_report:"4. Report",
-        sec_material:"Material", lbl_mat_type:"Type", opt_custom:"Custom",
-        sec_section:"Section Geometry", lbl_sec_shape:"Shape", opt_cust_c:"Custom C-Channel", opt_lipped_c:"Lipped C (4 Bends)",
-        btn_pt:"Point Mass (kg)", btn_udl:"Dist. Mass (kg/m)", btn_calc:"CALCULATE DETAILED REPORT",
-        trace_react:"Reaction Calculation Steps", trace_sec:"Section Property Steps"
+const DB_IPE = {
+    80:{h:80,b:46,tw:3.8,tf:5.2,A:764,Iy:80.1e4,Wy:20e3},
+    100:{h:100,b:55,tw:4.1,tf:5.7,A:1030,Iy:171e4,Wy:34.2e3},
+    120:{h:120,b:64,tw:4.4,tf:6.3,A:1320,Iy:318e4,Wy:53e3},
+    160:{h:160,b:82,tw:5.0,tf:7.4,A:2010,Iy:869e4,Wy:109e3},
+    200:{h:200,b:100,tw:5.6,tf:8.5,A:2850,Iy:1943e4,Wy:194e3},
+    240:{h:240,b:120,tw:6.2,tf:9.8,A:3910,Iy:3892e4,Wy:324e3},
+    300:{h:300,b:150,tw:7.1,tf:10.7,A:5380,Iy:8356e4,Wy:557e3}
+};
+const DB_UPN = {
+    80:{h:80,b:45,tw:6,tf:8,A:1100,Iy:106e4,Wy:26.5e3},
+    100:{h:100,b:50,tw:6,tf:8.5,A:1350,Iy:206e4,Wy:41.2e3},
+    200:{h:200,b:75,tw:8.5,tf:11.5,A:3220,Iy:1910e4,Wy:191e3}
+};
+
+/**
+ * --- REPORT GENERATOR ---
+ */
+const report = {
+    html: "",
+    startStep: function(title) {
+        this.html += `<div class="step-box"><div class="step-title">${title}</div>`;
     },
-    he: {
-        tab_geo:"1. גאומטריה", tab_loads:"2. עומסים", tab_design:"3. תכן", tab_report:"4. דוח",
-        sec_material:"חומר", lbl_mat_type:"סוג", opt_custom:"מותאם אישית",
-        sec_section:"חתך", lbl_sec_shape:"צורה", opt_cust_c:"פרופיל C מותאם", opt_lipped_c:"פרופיל C עם שפתיים",
-        btn_pt:"עומס מרוכז (ק״ג)", btn_udl:"עומס מחולק (ק״ג/מ׳)", btn_calc:"חשב והצג דוח מפורט",
-        trace_react:"שלבי חישוב ראקציות", trace_sec:"שלבי חישוב תכונות חתך"
+    addCalc: function(desc, eq, sub, res, note="") {
+        this.html += `
+        <div class="math-row">
+            <div class="math-desc">${desc} ${note?`<div class="note">${note}</div>`:''}</div>
+            <div style="text-align:right;">
+                ${eq ? `<div class="math-eq">$$ ${eq} $$</div>` : ''}
+                ${sub ? `<div class="math-sub">Sub: ${sub}</div>` : ''}
+            </div>
+            <div class="math-res">= ${res}</div>
+        </div>`;
+    },
+    addText: function(txt) { this.html += `<div style="padding:10px 0;">${txt}</div>`; },
+    endStep: function() { this.html += `</div>`; },
+    render: function() { 
+        document.getElementById('reportLog').innerHTML = this.html; 
+        this.html = ""; // reset
+        MathJax.typesetPromise(); 
     }
 };
-let CUR_LANG = 'en';
 
 /**
- * --- TRACE REPORTER ---
- * Creates the "Student Step-by-Step" view
- */
-class Reporter {
-    constructor() { this.html = ""; }
-    startSection(titleKey) {
-        const title = TR[CUR_LANG][titleKey] || titleKey;
-        this.html += `<div class="step-block"><div class="step-head">${title}</div>`;
-    }
-    addStep(desc, formula, sub, res, note="") {
-        this.html += `
-        <div class="calc-row">
-            <div><strong>${desc}</strong> ${note ? `<span style="color:#666; font-size:0.9em;">(${note})</span>` : ''}</div>
-            ${formula ? `<div class="latex-box">$$ ${formula} $$</div>` : ''}
-            ${sub ? `<div class="latex-box" style="background:#fff; border:none;">Sub: $$ ${sub} $$</div>` : ''}
-            <div style="font-weight:bold; color:var(--primary); margin-top:5px; text-align:right;">= ${res}</div>
-        </div>`;
-    }
-    addText(txt) { this.html += `<div style="padding:5px 0;">${txt}</div>`; }
-    endSection() { this.html += `</div>`; }
-    render() { document.getElementById('traceLog').innerHTML = this.html; MathJax.typesetPromise(); }
-}
-
-/**
- * --- SOLVER ENGINE ---
+ * --- SOLVER ---
  */
 const solver = {
     loads: [],
     
-    updateMat: function() {
-        const t = document.getElementById('matType').value;
-        const e = document.getElementById('matE'); const fy = document.getElementById('matFy');
-        if(t==='S235') { e.value=210000; fy.value=235; }
-        if(t==='S275') { e.value=210000; fy.value=275; }
-        if(t==='S355') { e.value=210000; fy.value=355; }
+    setMat: function() {
+        const m = document.getElementById('matType').value;
+        const e = document.getElementById('matE');
+        const f = document.getElementById('matFy');
+        if(m.includes('S235')) { e.value=210000; f.value=235; }
+        if(m.includes('S275')) { e.value=210000; f.value=275; }
+        if(m.includes('S355')) { e.value=210000; f.value=355; }
+        if(m.includes('AL'))   { e.value=70000; f.value=240; }
     },
 
-    // Calculates area and inertia using Parallel Axis Theorem
-    calculateCustomProps: function(type, report) {
-        let p = { A:0, Iy:0, Wy:0, h:0 };
-        // Define parts based on Centerline (simplified) or Blocks
-        // We use Block summation for ease of student display
-        let parts = [];
-        let note = "";
-
-        if(type === 'CUST_C') {
-            const H = parseFloat(document.getElementById('ccH').value);
-            const B = parseFloat(document.getElementById('ccB').value);
-            const tw = parseFloat(document.getElementById('ccTw').value);
-            const tf = parseFloat(document.getElementById('ccTf').value);
-            p.h = H;
-            // 1 Web, 2 Flanges
-            parts.push({ name:"Web", b:tw, h:H-(2*tf), y:0 }); // Centered
-            parts.push({ name:"Top Flange", b:B, h:tf, y:(H-tf)/2 });
-            parts.push({ name:"Bot Flange", b:B, h:tf, y:-(H-tf)/2 });
-            note = `Custom C: ${H}x${B} mm, tw=${tw}, tf=${tf}`;
-        } 
-        else if(type === 'LIPPED_C') {
-            const H = parseFloat(document.getElementById('lcH').value);
-            const B = parseFloat(document.getElementById('lcB').value);
-            const c = parseFloat(document.getElementById('lcC').value);
-            const t = parseFloat(document.getElementById('lcT').value);
-            p.h = H;
-            // 1 Web, 2 Flanges, 2 Lips (Downwards/Upwards return)
-            // Simplified modeling as rectangles
-            const h_web = H - 2*t;
-            parts.push({ name:"Web", b:t, h:h_web, y:0 });
-            parts.push({ name:"Top Flange", b:B, h:t, y:(H-t)/2 });
-            parts.push({ name:"Bot Flange", b:B, h:t, y:-(H-t)/2 });
-            // Lips are at the end of flanges, vertical
-            const y_lip = (H - 2*t - c)/2 + t; // approx pos
-            parts.push({ name:"Top Lip", b:t, h:c, y: (H/2) - t - (c/2) }); // hanging down from top flange
-            parts.push({ name:"Bot Lip", b:t, h:c, y: -(H/2) + t + (c/2) }); // going up from bot flange
-            note = `Lipped C: ${H}x${B}x${c} mm, t=${t}`;
-        }
-
-        if(parts.length > 0 && report) {
-            report.startSection('trace_sec');
-            report.addText(note);
-            report.addText("<strong>Method: Summation of Parts (Parallel Axis Theorem)</strong>");
-            let sumIy = 0; let sumA = 0;
-            let formulaStr = ""; let subStr = "";
-
-            parts.forEach((pt, i) => {
-                const area = pt.b * pt.h;
-                const I_local = (pt.b * Math.pow(pt.h,3))/12;
-                const distSq = Math.pow(pt.y, 2);
-                const I_shift = I_local + area * distSq;
-                sumA += area;
-                sumIy += I_shift;
-
-                report.addStep(
-                    `Part ${i+1}: ${pt.name}`,
-                    `I = \\frac{bh^3}{12} + Ad^2`,
-                    `\\frac{${pt.b}\\cdot${pt.h}^3}{12} + (${pt.b}\\cdot${pt.h})(${pt.y.toFixed(1)})^2`,
-                    I_shift.toExponential(2) + " mm^4"
-                );
-            });
-            p.A = sumA; p.Iy = sumIy; p.Wy = sumIy / (p.h/2);
-            
-            report.addStep("Total Inertia Iy", "I_y = \\sum I_{part}", "-", p.Iy.toExponential(2));
-            report.addStep("Section Modulus Wy", "W_y = I_y / (H/2)", `${p.Iy.toExponential(2)} / ${p.h/2}`, p.Wy.toExponential(2));
-            report.endSection();
-        } else {
-            // For preview without report
-            // ... (Simplified copy of above logic)
-            parts.forEach(pt => {
-                const area = pt.b * pt.h;
-                const I_local = (pt.b * Math.pow(pt.h,3))/12;
-                const I_shift = I_local + area * Math.pow(pt.y, 2);
-                p.A += area; p.Iy += I_shift;
-            });
-            p.Wy = p.Iy / (p.h/2);
-        }
-        return p;
-    },
-
-    getProps: function(report) {
-        const shape = document.getElementById('secShape').value;
-        // Standard DB
-        if(shape === 'IPE') return {...DB_IPE[document.getElementById('ipeSize').value]};
-        if(shape === 'UPN') return {...DB_UPN[document.getElementById('upnSize').value]};
-        if(shape === 'RHS') {
-            const h = parseFloat(document.getElementById('rhsH').value);
-            const b = parseFloat(document.getElementById('rhsB').value);
-            const t = parseFloat(document.getElementById('rhsT').value);
-            const Iy = (b*h**3 - (b-2*t)*(h-2*t)**3)/12;
-            return { h:h, A:(b*h - (b-2*t)*(h-2*t)), Iy:Iy, Wy:Iy/(h/2) };
-        }
-        if(shape === 'SOLID') {
-            const h = parseFloat(document.getElementById('solH').value);
-            const b = parseFloat(document.getElementById('solB').value);
-            const Iy = (b*h**3)/12;
-            return { h:h, A:b*h, Iy:Iy, Wy:Iy/(h/2) };
-        }
-        // Custom
-        return this.calculateCustomProps(shape, report);
-    },
-
-    run: function() {
-        const report = new Reporter();
-        const L = parseFloat(document.getElementById('beamL').value);
-        const g = 9.81;
+    getSec: function(log=false) {
+        const type = document.getElementById('secShape').value;
+        let s = {A:0, Iy:0, Wy:0, h:0, Av:0, desc:""}; // Av = Shear Area
         
-        // 1. SECTION
-        const sec = this.getProps(report); // Pass report to trigger step-by-step for custom
+        // 1. STANDARD
+        if(type==='IPE') {
+            const d = DB_IPE[document.getElementById('ipeSize').value];
+            s={...d, desc:`IPE ${d.h}`}; s.Av = s.h * s.tw; // Web area approx
+            if(log) report.addCalc("Standard Section Lookup", "-", "-", `I_y=${d.Iy.toExponential(2)}`);
+        }
+        else if(type==='UPN') {
+            const d = DB_UPN[document.getElementById('upnSize').value];
+            s={...d, desc:`UPN ${d.h}`}; s.Av = s.h * s.tw;
+            if(log) report.addCalc("Standard Section Lookup", "-", "-", `I_y=${d.Iy.toExponential(2)}`);
+        }
+        // 2. RECT HOLLOW
+        else if(type==='RHS') {
+            const h=parseFloat(document.getElementById('rhH').value);
+            const b=parseFloat(document.getElementById('rhB').value);
+            const t=parseFloat(document.getElementById('rhT').value);
+            s.h=h; s.desc=`RHS ${h}x${b}x${t}`;
+            // I_out - I_in
+            const Io = b*Math.pow(h,3)/12;
+            const Ii = (b-2*t)*Math.pow(h-2*t,3)/12;
+            s.Iy = Io - Ii;
+            s.Wy = s.Iy / (h/2);
+            s.A = b*h - (b-2*t)*(h-2*t);
+            s.Av = 2 * (h-2*t) * t; // 2 webs
+            if(log) report.addCalc("Moment of Inertia", "I = \\frac{BH^3}{12} - \\frac{bh^3}{12}", `\\frac{${b}\\cdot${h}^3}{12} - \\dots`, s.Iy.toExponential(2)+" mm^4");
+        }
+        // 3. CUSTOM CHANNELS (PARALLEL AXIS)
+        else {
+            // Parts logic
+            let parts = [];
+            if(type==='CC') {
+                const h=parseFloat(document.getElementById('ccH').value);
+                const b=parseFloat(document.getElementById('ccB').value);
+                const tw=parseFloat(document.getElementById('ccTw').value);
+                const tf=parseFloat(document.getElementById('ccTf').value);
+                s.h=h; s.desc=`Custom C ${h}x${b}`; s.Av = h*tw;
+                parts.push({b:tw, h:h-2*tf, y:0}); // Web
+                parts.push({b:b, h:tf, y:(h-tf)/2}); // Top Flange
+                parts.push({b:b, h:tf, y:-(h-tf)/2}); // Bot Flange
+            }
+            else if(type==='LC') {
+                const h=parseFloat(document.getElementById('lcH').value);
+                const b=parseFloat(document.getElementById('lcB').value);
+                const c=parseFloat(document.getElementById('lcC').value);
+                const t=parseFloat(document.getElementById('lcT').value);
+                s.h=h; s.desc=`Lipped C ${h}x${b}x${c}`; s.Av = h*t;
+                // Simplified parts
+                parts.push({b:t, h:h-2*t, y:0}); // Web
+                parts.push({b:b, h:t, y:(h-t)/2}); // Top F
+                parts.push({b:b, h:t, y:-(h-t)/2}); // Bot F
+                parts.push({b:t, h:c, y:(h-2*t-c)/2 + t}); // Lip Top (hangs down) - Approx for calc
+                parts.push({b:t, h:c, y:-((h-2*t-c)/2 + t)}); // Lip Bot
+                // Fix lip Y centroid for visual/calc accuracy
+                // Top Lip centroid is (h/2 - c/2) approx
+                parts[3].y = (h/2) - (c/2); 
+                parts[4].y = -(h/2) + (c/2);
+            }
 
-        // 2. LOADS & STATICS
-        let forces = []; // processed loads in N
-        let sumP = 0; 
-        let sumM_A_eqn = []; // For string building
-        let sumM_A_val = 0;
-
-        report.startSection('trace_react');
-        report.addText(`<strong>1. Convert Mass to Force (g = 9.81 m/s²)</strong>`);
-        
-        this.loads.forEach((l, idx) => {
-            if(l.type==='point') {
-                const F = l.val * g;
-                forces.push({ type:'P', x:l.x, F:F });
-                sumP += F;
-                sumM_A_val += F * l.x;
-                sumM_A_eqn.push(`(${F.toFixed(0)} \\cdot ${l.x})`);
-                report.addStep(`Load ${idx+1} (Point)`, "P = m \\cdot g", `${l.val} \\cdot 9.81`, F.toFixed(1)+" N");
+            if(log) {
+                report.addText("<strong>Parallel Axis Theorem:</strong> $I_{total} = \\sum (I_{local} + A \\cdot d^2)$");
+                let sumI=0, sumA=0;
+                parts.forEach((p,i) => {
+                    let A = p.b*p.h;
+                    let I = p.b*Math.pow(p.h,3)/12;
+                    let d2 = p.y*p.y;
+                    let tot = I + A*d2;
+                    sumI+=tot; sumA+=A;
+                    report.addCalc(`Part ${i+1} (y=${p.y.toFixed(1)})`, "I+Ad^2", `${I.toFixed(0)} + ${A.toFixed(0)}\\cdot${p.y.toFixed(1)}^2`, tot.toExponential(2));
+                });
+                s.Iy = sumI; s.A = sumA; s.Wy = sumI/(s.h/2);
             } else {
-                const w = (l.val * g) / 1000; // N/mm
-                const len = l.x2 - l.x1;
-                const F = w * len;
-                const cent = l.x1 + len/2;
-                forces.push({ type:'UDL', x1:l.x1, x2:l.x2, w:w, F:F });
-                sumP += F;
-                sumM_A_val += F * cent;
-                sumM_A_eqn.push(`(${F.toFixed(0)} \\cdot ${cent})`);
-                report.addStep(`Load ${idx+1} (UDL)`, "F = w \\cdot L", `(${l.val}\\cdot 9.81/1000) \\cdot ${len}`, F.toFixed(1)+" N");
+                parts.forEach(p => s.Iy += (p.b*Math.pow(p.h,3)/12) + (p.b*p.h*p.y*p.y));
+                parts.forEach(p => s.A += p.b*p.h);
+                s.Wy = s.Iy/(s.h/2);
+            }
+        }
+        return s;
+    },
+
+    solve: function() {
+        ui.syncLoads();
+        ui.setTab('results');
+        
+        const sec = this.getSec(true); // Get Props & Log steps
+        
+        // 1. REPORT HEADER
+        report.startStep("1. Load Analysis & Reactions");
+        const g = 9.81;
+        const L = parseFloat(document.getElementById('beamL').value);
+        let forces = [];
+        let sumP=0, sumM_A=0;
+        
+        // Convert Loads
+        this.loads.forEach((l,i) => {
+            if(l.type==='pt') {
+                let F = l.val * g;
+                forces.push({type:'P', x:l.pos, F:F});
+                sumP+=F; sumM_A+=F*l.pos;
+                report.addCalc(`Load ${i+1} (Point)`, "P=mg", `${l.val}\\cdot 9.81`, F.toFixed(1)+" N", `@ x=${l.pos} mm`);
+            } else {
+                let w = (l.val*g)/1000; // N/mm
+                let len = l.x2-l.x1;
+                let F = w*len;
+                let c = l.x1 + len/2;
+                forces.push({type:'U', x1:l.x1, x2:l.x2, w:w, F:F});
+                sumP+=F; sumM_A+=F*c;
+                report.addCalc(`Load ${i+1} (UDL)`, "W_{tot}=wL", `${(l.val*g).toFixed(1)}\\text{ N/m} \\cdot ${len/1000}\\text{ m}`, F.toFixed(1)+" N");
             }
         });
 
+        // Reactions
         let Ra=0, Rb=0, Ma=0;
         const supp = document.getElementById('suppType').value;
-        
-        if(supp === 'pinned') {
-            report.addText("<br><strong>2. Equilibrium Equations (Simply Supported)</strong>");
-            // Sum Moments about A
-            const eqnStr = sumM_A_eqn.join(" + ");
-            report.addStep("Sum Moments about A = 0", "\\sum M_A = 0 \\rightarrow R_B \\cdot L = \\sum (F_i \\cdot x_i)", 
-                `R_B \\cdot ${L} = ${eqnStr}`, "");
-            
-            Rb = sumM_A_val / L;
-            report.addStep("Solve for Rb", "R_B = \\sum M / L", `${sumM_A_val.toFixed(0)} / ${L}`, Rb.toFixed(1) + " N");
-            
+        if(supp === 'pin') {
+            Rb = sumM_A / L;
             Ra = sumP - Rb;
-            report.addStep("Sum Vertical Forces = 0", "R_A = \\sum P - R_B", `${sumP.toFixed(0)} - ${Rb.toFixed(0)}`, Ra.toFixed(1) + " N");
+            report.addCalc("Sum Moments @ A", "\\sum M_A = 0 \\Rightarrow R_B \\cdot L = \\sum M_{loads}", `R_B \\cdot ${L} = ${sumM_A.toFixed(0)}`, "");
+            report.addCalc("Reaction B", "R_B = \\sum M / L", `${sumM_A.toFixed(0)} / ${L}`, Rb.toFixed(1)+" N");
+            report.addCalc("Reaction A", "R_A = \\sum F_y - R_B", `${sumP.toFixed(1)} - ${Rb.toFixed(1)}`, Ra.toFixed(1)+" N");
         } else {
-            // Cantilever
-            Ra = sumP; Ma = sumM_A_val;
-            report.addText("<br><strong>2. Equilibrium (Cantilever)</strong>");
-            report.addStep("Reaction A (Vertical)", "R_A = \\sum P", "-", Ra.toFixed(1) + " N");
-            report.addStep("Reaction A (Moment)", "M_A = \\sum M_{loads}", "-", (Ma/1e6).toFixed(2) + " kNm");
+            Ra = sumP; Ma = sumM_A;
+            report.addCalc("Reaction A (Vert)", "R_A = \\sum P", "-", Ra.toFixed(1)+" N");
+            report.addCalc("Reaction A (Moment)", "M_A = \\sum M_{loads}", "-", (Ma/1e6).toFixed(2)+" kNm");
         }
-        report.endSection();
+        report.endStep();
 
-        // 3. DIAGRAMS (Numerical Integration)
-        const pts = 200; const dx = L/pts;
-        const X=[], V=[], M=[];
-        let maxM=0;
-
-        for(let i=0; i<=pts; i++) {
-            let x = i*dx;
-            X.push(x.toFixed(0));
-            // Cut from left
-            let v = Ra;
-            let m = (supp==='cantilever') ? Ra*x - Ma : Ra*x;
+        // 2. INTEGRATION (Arrays)
+        const n=200; const dx=L/n;
+        let X=[], V=[], M=[];
+        let maxM=0, maxV=0;
+        
+        for(let i=0; i<=n; i++) {
+            let x = i*dx; X.push(x.toFixed(0));
+            let v = Ra; 
+            let m = (supp==='cant') ? Ra*x - Ma : Ra*x;
             
-            forces.forEach(l => {
-                if(l.type === 'P') {
-                    if(x > l.x) { v -= l.F; m -= l.F * (x - l.x); }
+            forces.forEach(f => {
+                if(f.type==='P') {
+                    if(x > f.x) { v-=f.F; m-=f.F*(x-f.x); }
                 } else {
-                    if(x > l.x1) {
-                        let act_x = Math.min(x, l.x2);
-                        let run = act_x - l.x1;
-                        let f = l.w * run;
-                        v -= f;
-                        m -= f * (x - (l.x1 + run/2));
+                    if(x > f.x1) {
+                        let run = Math.min(x, f.x2) - f.x1;
+                        let f_seg = f.w * run;
+                        v-=f_seg;
+                        m-=f_seg * (x - (f.x1 + run/2));
                     }
                 }
             });
             V.push(v); M.push(m);
-            if(Math.abs(m)>Math.abs(maxM)) maxM = Math.abs(m);
+            if(Math.abs(m)>Math.abs(maxM)) maxM=Math.abs(m);
+            if(Math.abs(v)>Math.abs(maxV)) maxV=Math.abs(v);
         }
 
-        // 4. DEFLECTION & STRESS
-        const EI = parseFloat(document.getElementById('matE').value) * sec.Iy;
-        let slopeArr=[0], deflArr=[0];
-        // Integrate M -> Slope -> Defl
-        for(let i=0; i<pts; i++) slopeArr.push(slopeArr[i] + (M[i]+M[i+1])/2*dx);
-        for(let i=0; i<pts; i++) deflArr.push(deflArr[i] + (slopeArr[i]+slopeArr[i+1])/2*dx);
+        // 3. DEFLECTION
+        const E = parseFloat(document.getElementById('matE').value);
+        const EI = E * sec.Iy;
+        let slope=[0], def=[0];
+        // Integrate M -> Slope -> Def
+        for(let i=0; i<n; i++) slope.push(slope[i] + (M[i]+M[i+1])/2*dx);
+        for(let i=0; i<n; i++) def.push(def[i] + (slope[i]+slope[i+1])/2*dx);
         
-        let Y_final = [];
-        let maxDef = 0;
-        if(supp === 'pinned') {
-            const theta_corr = deflArr[pts] / L;
-            for(let i=0; i<=pts; i++) {
-                let y = (deflArr[i] - theta_corr * (i*dx)) / EI * -1;
-                Y_final.push(y); if(Math.abs(y)>maxDef) maxDef=Math.abs(y);
+        // BC Correction
+        let Y=[]; let maxDef=0;
+        if(supp==='pin') {
+            let theta = def[n]/L;
+            for(let i=0; i<=n; i++) {
+                let y = (def[i] - theta*i*dx) / EI * -1; // -1 for convention
+                Y.push(y); if(Math.abs(y)>maxDef) maxDef=Math.abs(y);
             }
         } else {
-            for(let i=0; i<=pts; i++) {
-                let y = deflArr[i] / EI;
-                Y_final.push(y); if(Math.abs(y)>maxDef) maxDef=Math.abs(y);
+            for(let i=0; i<=n; i++) {
+                let y = def[i] / EI;
+                Y.push(y); if(Math.abs(y)>maxDef) maxDef=Math.abs(y);
             }
         }
 
-        // 5. UPDATE UI
-        const sigma = maxM / sec.Wy;
-        const fy = document.getElementById('matFy').value;
-        const util = (sigma/fy)*100;
+        // 4. STRESS & CHECKS (Step by Step)
+        report.startStep("2. Stress Analysis");
         
-        document.getElementById('val_util_bend').innerText = util.toFixed(0) + "%";
-        document.getElementById('badge_bend').className = util>100?'status-fail':'status-pass';
-        document.getElementById('badge_bend').innerText = util>100?"FAIL":"PASS";
-        document.getElementById('val_defl').innerText = maxDef.toFixed(1) + " mm";
+        // Bending
+        const sig = maxM / sec.Wy;
+        report.addCalc("Max Bending Moment", "M_{max}", "-", (maxM/1e6).toFixed(2)+" kNm", `From Diagram`);
+        report.addCalc("Section Modulus", "W_{el}", "-", (sec.Wy/1e3).toFixed(0)+" cm³");
+        report.addCalc("Bending Stress", "\\sigma = \\frac{M_{max}}{W_{el}}", `\\frac{${maxM.toFixed(0)}}{${sec.Wy.toFixed(0)}}`, sig.toFixed(2)+" MPa");
         
-        // Render Charts
-        drawChart('chartV', 'Shear (kN)', X, V.map(v=>v/1000), '#dc3545');
-        drawChart('chartM', 'Moment (kNm)', X, M.map(m=>m/1e6), '#0056b3');
+        // Shear
+        const tau = maxV / sec.Av;
+        report.addCalc("Max Shear Force", "V_{max}", "-", (maxV/1e3).toFixed(2)+" kN");
+        report.addCalc("Shear Area", "A_v", "-", sec.Av.toFixed(0)+" mm²", `(Web Area)`);
+        report.addCalc("Avg. Shear Stress", "\\tau = \\frac{V_{max}}{A_v}", `\\frac{${maxV.toFixed(0)}}{${sec.Av.toFixed(0)}}`, tau.toFixed(2)+" MPa");
+        report.endStep();
+
+        // 5. DEFLECTION VERIFICATION
+        report.startStep("3. Deflection Verification");
+        report.addCalc("Numerical Result", "\\delta_{max}", "-", maxDef.toFixed(2)+" mm", `Via Double Integration`);
         
+        // Textbook Checks
+        let formula="", calc="";
+        // Check Case: Simple Span + 1 UDL (full)
+        if(supp==='pin' && forces.length===1 && forces[0].type==='U' && forces[0].x1===0 && forces[0].x2===L) {
+            let w = forces[0].w;
+            formula = "\\frac{5wL^4}{384EI}";
+            let num = 5 * w * Math.pow(L,4);
+            let den = 384 * E * sec.Iy;
+            calc = (num/den).toFixed(2);
+            report.addCalc("Textbook Formula", "\\delta = "+formula, `\\text{Standard Case: UDL}`, calc+" mm", "Verification Match");
+        }
+        // Check Case: Simple Span + Center Point
+        if(supp==='pin' && forces.length===1 && forces[0].type==='P' && forces[0].x === L/2) {
+            let P = forces[0].F;
+            formula = "\\frac{PL^3}{48EI}";
+            let num = P * Math.pow(L,3);
+            let den = 48 * E * sec.Iy;
+            calc = (num/den).toFixed(2);
+            report.addCalc("Textbook Formula", "\\delta = "+formula, `\\text{Standard Case: Point Load}`, calc+" mm", "Verification Match");
+        }
+        // Check Case: Cantilever + End Point
+        if(supp==='cant' && forces.length===1 && forces[0].type==='P' && forces[0].x === L) {
+            let P = forces[0].F;
+            formula = "\\frac{PL^3}{3EI}";
+            let num = P * Math.pow(L,3);
+            let den = 3 * E * sec.Iy;
+            calc = (num/den).toFixed(2);
+            report.addCalc("Textbook Formula", "\\delta = "+formula, `\\text{Standard Case: End Load}`, calc+" mm", "Verification Match");
+        }
+        report.endStep();
+
+        // RENDER UI
         report.render();
-        ui.tab('report');
+        const fy = document.getElementById('matFy').value;
+        const fy_shear = fy/Math.sqrt(3);
+        
+        document.getElementById('res-sig').innerText = sig.toFixed(1) + " MPa";
+        document.getElementById('badge-sig').className = sig<fy ? 'badge-pass' : 'badge-fail';
+        document.getElementById('badge-sig').innerText = sig<fy ? `PASS (< ${fy})` : `FAIL (> ${fy})`;
+
+        document.getElementById('res-tau').innerText = tau.toFixed(1) + " MPa";
+        document.getElementById('badge-tau').className = tau<fy_shear ? 'badge-pass' : 'badge-fail';
+        document.getElementById('badge-tau').innerText = tau<fy_shear ? `PASS` : `FAIL`;
+
+        document.getElementById('res-def').innerText = maxDef.toFixed(2) + " mm";
+        document.getElementById('res-ratio').innerText = "L / " + (maxDef>0?(L/maxDef).toFixed(0):"-");
+
+        drawChart('chartV', 'Shear (kN)', X, V.map(v=>v/1000), '#dc3545');
+        drawChart('chartM', 'Moment (kNm)', X, M.map(m=>m/1e6), '#0d6efd');
     }
 };
 
-/**
- * --- UI & UTILS ---
- */
+/** UI HELPERS */
 const ui = {
-    tab: function(id) {
-        document.querySelectorAll('.tab-content').forEach(e => e.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(e => e.classList.remove('active'));
+    setTab: function(id) {
+        document.querySelectorAll('.panel').forEach(e=>e.classList.remove('active'));
         document.getElementById(id).classList.add('active');
-        const map={geometry:0,loads:1,design:2,report:3};
-        document.querySelectorAll('.tab-btn')[map[id]].classList.add('active');
-        if(id==='loads') drawBeamSchematic();
+        document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));
+        if(id==='geo') document.querySelectorAll('.tab')[0].classList.add('active');
+        if(id==='loads') { 
+            document.querySelectorAll('.tab')[1].classList.add('active'); 
+            this.drawBeam(); 
+        }
+        if(id==='results') document.querySelectorAll('.tab')[2].classList.add('active');
     },
-    toggleSection: function() {
-        const t = document.getElementById('secShape').value;
-        document.querySelectorAll('.sec-inputs').forEach(e => e.classList.add('hidden'));
-        document.getElementById('input-'+t).classList.remove('hidden');
-        this.updateLiveProps();
+    toggleSec: function() {
+        document.querySelectorAll('.inp-grp').forEach(e=>e.classList.add('hidden'));
+        document.getElementById('inp-'+document.getElementById('secShape').value).classList.remove('hidden');
+        this.updatePreview();
     },
-    updateLiveProps: function() {
-        const p = solver.getProps(null); // No report, just calc
-        document.getElementById('liveProps').innerHTML = `A=${p.A.toFixed(0)} Iy=${(p.Iy/1e4).toFixed(1)}e4 Wy=${(p.Wy/1e3).toFixed(1)}e3`;
+    updatePreview: function() {
+        const s = solver.getSec(false);
+        document.getElementById('liveProps').innerHTML = 
+            `Ix: ${(s.Iy/1e4).toFixed(1)}e4 mm4<br>Wx: ${(s.Wy/1e3).toFixed(1)}e3 mm3<br>Area: ${s.A.toFixed(0)} mm2`;
+        this.drawSec(s);
+    },
+    drawSec: function(s) {
+        const cvs = document.getElementById('secCanvas');
+        const ctx = cvs.getContext('2d');
+        ctx.clearRect(0,0,100,100);
+        ctx.fillStyle='#ddd'; ctx.strokeStyle='#333';
+        // Simple visualization scaling
+        const scale = 80 / Math.max(s.h, 50); // fit to box
+        const cx=50, cy=50;
+        const h = s.h*scale, w = (s.b || s.h/2)*scale;
+        ctx.fillRect(cx-w/2, cy-h/2, w, h);
+        ctx.strokeRect(cx-w/2, cy-h/2, w, h);
     },
     addLoad: function(type) {
         const div = document.createElement('div');
-        div.className = "card row";
-        div.style.padding = "10px"; div.style.alignItems = "center";
+        div.className = "row"; div.style.alignItems="center"; div.style.marginBottom="10px";
         const L = document.getElementById('beamL').value;
-        if(type==='point') {
-            div.innerHTML = `<div style="font-weight:bold; width:40px;">Pt</div>
-            <div class="col"><input type="number" class="l-pos" value="${L/2}"></div>
-            <div class="col"><input type="number" class="l-val" value="1000"></div>
-            <button class="btn btn-danger" onclick="this.parentElement.remove(); ui.syncLoads();">X</button>
-            <input type="hidden" class="l-type" value="point">`;
+        if(type==='pt') {
+            div.innerHTML = `<div style="width:50px; font-weight:bold;">Pt</div>
+            <input type="number" class="l-pos" value="${L/2}" placeholder="Pos (mm)">
+            <input type="number" class="l-val" value="1000" placeholder="Mass (kg)">
+            <button class="btn btn-del" onclick="this.parentElement.remove(); ui.drawBeam()">X</button>
+            <input type="hidden" class="l-type" value="pt">`;
         } else {
-            div.innerHTML = `<div style="font-weight:bold; width:40px;">UDL</div>
-            <div class="col"><input type="number" class="l-x1" value="0"></div>
-            <div class="col"><input type="number" class="l-x2" value="${L}"></div>
-            <div class="col"><input type="number" class="l-val" value="500"></div>
-            <button class="btn btn-danger" onclick="this.parentElement.remove(); ui.syncLoads();">X</button>
+            div.innerHTML = `<div style="width:50px; font-weight:bold;">UDL</div>
+            <input type="number" class="l-x1" value="0" placeholder="Start">
+            <input type="number" class="l-x2" value="${L}" placeholder="End">
+            <input type="number" class="l-val" value="500" placeholder="kg/m">
+            <button class="btn btn-del" onclick="this.parentElement.remove(); ui.drawBeam()">X</button>
             <input type="hidden" class="l-type" value="udl">`;
         }
-        document.getElementById('loadContainer').appendChild(div);
-        this.syncLoads();
+        document.getElementById('loadList').appendChild(div);
+        this.drawBeam();
     },
     syncLoads: function() {
         solver.loads = [];
-        document.querySelectorAll('#loadContainer > div').forEach(div => {
-            const type = div.querySelector('.l-type').value;
-            if(type==='point') solver.loads.push({type:'point', x:parseFloat(div.querySelector('.l-pos').value), val:parseFloat(div.querySelector('.l-val').value)});
-            else solver.loads.push({type:'udl', x1:parseFloat(div.querySelector('.l-x1').value), x2:parseFloat(div.querySelector('.l-x2').value), val:parseFloat(div.querySelector('.l-val').value)});
+        document.querySelectorAll('#loadList > div').forEach(d => {
+            const t = d.querySelector('.l-type').value;
+            if(t==='pt') solver.loads.push({type:'pt', pos:parseFloat(d.querySelector('.l-pos').value), val:parseFloat(d.querySelector('.l-val').value)});
+            else solver.loads.push({type:'udl', x1:parseFloat(d.querySelector('.l-x1').value), x2:parseFloat(d.querySelector('.l-x2').value), val:parseFloat(d.querySelector('.l-val').value)});
         });
-        drawBeamSchematic();
+    },
+    drawBeam: function() {
+        const cvs = document.getElementById('beamCanvas'); const ctx = cvs.getContext('2d');
+        const w=cvs.width=cvs.parentElement.offsetWidth; const h=cvs.height=180;
+        const L = parseFloat(document.getElementById('beamL').value);
+        const scale = (w-60)/L; const y0=h/2; const pad=30;
+        
+        ctx.clearRect(0,0,w,h);
+        // Beam
+        ctx.lineWidth=6; ctx.strokeStyle='#333'; ctx.beginPath(); ctx.moveTo(pad,y0); ctx.lineTo(pad+L*scale,y0); ctx.stroke();
+        // Supports
+        ctx.fillStyle='#0d6efd';
+        const st = document.getElementById('suppType').value;
+        ctx.fillRect(pad-5,y0,10,15); // Left
+        if(st==='pin') ctx.fillRect(pad+L*scale-5,y0,10,15); // Right
+        else { ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(pad,y0-25); ctx.lineTo(pad,y0+25); ctx.stroke(); }
+        // Loads
+        ctx.fillStyle='#dc3545'; ctx.strokeStyle='#dc3545';
+        document.querySelectorAll('#loadList > div').forEach(d => {
+            if(d.querySelector('.l-type').value === 'pt') {
+                let x = pad + parseFloat(d.querySelector('.l-pos').value)*scale;
+                let val = d.querySelector('.l-val').value;
+                drawArrow(ctx, x, y0-50, x, y0-5);
+                ctx.fillText(val+"kg", x+5, y0-55);
+            } else {
+                let x1 = pad + parseFloat(d.querySelector('.l-x1').value)*scale;
+                let x2 = pad + parseFloat(d.querySelector('.l-x2').value)*scale;
+                ctx.globalAlpha=0.2; ctx.fillRect(x1, y0-30, x2-x1, 25); ctx.globalAlpha=1.0;
+                ctx.fillText(d.querySelector('.l-val').value+"kg/m", x1, y0-35);
+            }
+        });
     }
 };
 
-let charts = {};
-function drawChart(id, label, x, y, color) {
-    const ctx = document.getElementById(id).getContext('2d');
-    if(charts[id]) charts[id].destroy();
-    charts[id] = new Chart(ctx, {
-        type:'line', data:{labels:x, datasets:[{label:label, data:y, borderColor:color, borderWidth:2, pointRadius:0, fill:true, backgroundColor:color+'20'}]},
+function drawArrow(ctx,fx,fy,tx,ty) {
+    ctx.beginPath(); ctx.moveTo(fx,fy); ctx.lineTo(tx,ty);
+    ctx.lineTo(tx-5, ty-10); ctx.moveTo(tx,ty); ctx.lineTo(tx+5, ty-10); ctx.stroke();
+}
+function drawChart(id,lbl,x,y,col) {
+    new Chart(document.getElementById(id), {
+        type:'line', data:{labels:x, datasets:[{label:lbl, data:y, borderColor:col, backgroundColor:col+'20', fill:true, pointRadius:0, borderWidth:2}]},
         options:{responsive:true, maintainAspectRatio:false, scales:{x:{ticks:{maxTicksLimit:8}}}, plugins:{legend:{display:false}}}
     });
 }
-
-function changeLanguage() {
-    CUR_LANG = document.getElementById('langSelect').value;
-    document.body.dir = (CUR_LANG === 'he') ? 'rtl' : 'ltr';
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-        const k = el.getAttribute('data-i18n');
-        if(TR[CUR_LANG][k]) el.innerText = TR[CUR_LANG][k];
-    });
-}
-
-function drawBeamSchematic() {
-    const cvs = document.getElementById('beamCanvas'); const ctx = cvs.getContext('2d');
-    const w = cvs.width = cvs.parentElement.offsetWidth; const h = cvs.height = 200;
-    const L = parseFloat(document.getElementById('beamL').value);
-    const scale = (w-60)/L; const y0=h/2; const pad=30;
-    ctx.clearRect(0,0,w,h);
-    // Beam
-    ctx.lineWidth=6; ctx.strokeStyle='#333'; ctx.beginPath(); ctx.moveTo(pad,y0); ctx.lineTo(pad+L*scale,y0); ctx.stroke();
-    // Supports
-    ctx.fillStyle='#0056b3';
-    const st = document.getElementById('suppType').value;
-    ctx.fillRect(pad-5,y0,10,20); 
-    if(st==='pinned') ctx.fillRect(pad+L*scale-5,y0,10,20);
-    else { ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(pad,y0-25); ctx.lineTo(pad,y0+25); ctx.stroke(); }
-    // Loads
-    ctx.strokeStyle='#dc3545'; ctx.fillStyle='#dc3545';
-    solver.loads.forEach(l => {
-        if(l.type==='point') { let x=pad+l.x*scale; ctx.beginPath(); ctx.moveTo(x,y0-40); ctx.lineTo(x,y0-5); ctx.stroke(); ctx.beginPath(); ctx.arc(x,y0-5,3,0,6.28); ctx.fill(); }
-        else { let x1=pad+l.x1*scale; let x2=pad+l.x2*scale; ctx.globalAlpha=0.3; ctx.fillRect(x1,y0-30,x2-x1,25); ctx.globalAlpha=1.0; }
-    });
-}
-
 window.onload = function() {
-    const ipe = document.getElementById('ipeSize'); Object.keys(DB_IPE).forEach(k=>ipe.add(new Option('IPE '+k, k))); ipe.value="200";
-    const upn = document.getElementById('upnSize'); Object.keys(DB_UPN).forEach(k=>upn.add(new Option('UPN '+k, k)));
-    ['ipeSize','upnSize','ccH','ccB','ccTw','ccTf','lcH','lcB','lcC','lcT','rhsH','rhsB','rhsT','solH','solB'].forEach(id => {
-        document.getElementById(id).addEventListener('change', ()=>ui.updateLiveProps());
-    });
-    ui.addLoad('point'); // init default load
-    ui.updateLiveProps();
-    changeLanguage();
+    // Init standard sizes
+    const ipe=document.getElementById('ipeSize'); Object.keys(DB_IPE).forEach(k=>ipe.add(new Option('IPE '+k, k))); ipe.value="200";
+    const upn=document.getElementById('upnSize'); Object.keys(DB_UPN).forEach(k=>upn.add(new Option('UPN '+k, k)));
+    // Attach Listeners
+    document.querySelectorAll('input, select').forEach(e=>e.addEventListener('change', ()=>ui.updatePreview()));
+    ui.addLoad('pt');
+    ui.updatePreview();
 };
 </script>
 </body>
